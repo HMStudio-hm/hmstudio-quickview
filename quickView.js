@@ -15,12 +15,12 @@
   }
 
   function fetchSettings() {
-    const managerId = getStoreId();
-    if (!managerId) {
+    const storeId = getStoreId();
+    if (!storeId) {
       console.error('Store ID not found');
       return;
     }
-    fetch(`https://3cbe-105-156-116-5.ngrok-free.app/api/quick-view-settings?storeId=${managerId}`)
+    fetch(`https://3cbe-105-156-116-5.ngrok-free.app/api/quick-view-settings?storeId=${storeId}`)
       .then(response => response.json())
       .then(settings => {
         currentSettings = settings;
