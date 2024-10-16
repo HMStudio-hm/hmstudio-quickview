@@ -10,17 +10,17 @@
     quickViewStyle: 'right'
   };
 
-  function getManagerId() {
-    return document.body.getAttribute('data-manager-id');
+  function getStoreId() {
+    return document.body.getAttribute('data-store-id');
   }
 
   function fetchSettings() {
-    const managerId = getManagerId();
-    if (!managerId) {
-      console.error('Manager ID not found');
+    const storeId = getStoreId();
+    if (!storeId) {
+      console.error('Store ID not found');
       return;
     }
-    fetch(`https://6df0-105-156-116-5.ngrok-free.app/api/quick-view-settings?managerId=${managerId}`)
+    fetch(`https://ca5c-105-156-116-5.ngrok-free.app/api/quick-view-settings?storeId=${storeId}`)
       .then(response => response.json())
       .then(settings => {
         currentSettings = settings;
