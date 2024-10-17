@@ -6,19 +6,26 @@
     quickViewStyle: 'right'
   };
 
+  const HARDCODED_MANAGER_ID = '646181'; // Hardcoded manager ID for testing
+
   function log(message) {
     console.log(`[HMStudio QuickView]: ${message}`);
   }
 
   function fetchConfig() {
-    const managerId = document.body.getAttribute('data-manager-id');
-    if (!managerId) {
-      log('Manager ID not found');
-      return;
-    }
+    // Use hardcoded manager ID for testing
+    const managerId = HARDCODED_MANAGER_ID;
+    log(`Using hardcoded manager ID for testing: ${managerId}`);
+
+    // Keeping the original logic commented out for future use
+    // const managerId = document.body.getAttribute('data-manager-id');
+    // if (!managerId) {
+    //   log('Manager ID not found');
+    //   return;
+    // }
 
     log(`Fetching config for manager: ${managerId}`);
-    fetch(`https://your-cloud-function-url.com/getQuickViewConfig?managerId=${managerId}`)
+    fetch(`https://8f13-41-141-105-37.ngrok-free.app/getQuickViewConfig?managerId=${managerId}`)
       .then(response => response.json())
       .then(newConfig => {
         config = newConfig;
