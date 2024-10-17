@@ -20,7 +20,7 @@
       console.error('Manager ID not found');
       return;
     }
-    fetch(`https://ccc2-41-141-105-37.ngrok-free.app/api/quick-view-settings?managerId=${managerId}`)
+    fetch(`https://8f13-41-141-105-37.ngrok-free.app/api/quick-view-settings?managerId=${managerId}`)
       .then(response => response.json())
       .then(settings => {
         currentSettings = settings;
