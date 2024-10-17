@@ -10,17 +10,17 @@
     quickViewStyle: 'right'
   };
 
-  function getStoreId() {
-    return document.body.getAttribute('data-store-id');
+  function getManagerId() {
+    return document.body.getAttribute('data-manager-id');
   }
 
   function fetchSettings() {
-    const storeId = getStoreId();
-    if (!storeId) {
-      console.error('Store ID not found');
+    const managerId = getManagerId();
+    if (!managerId) {
+      console.error('Manager ID not found');
       return;
     }
-    fetch(`https://fba2-41-141-105-37.ngrok-free.app/api/quick-view-settings?storeId=${storeId}`)
+    fetch(`https://fba2-41-141-105-37.ngrok-free.app/api/quick-view-settings?managerId=${managerId}`)
       .then(response => response.json())
       .then(settings => {
         currentSettings = settings;
