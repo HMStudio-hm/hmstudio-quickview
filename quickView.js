@@ -31,23 +31,45 @@
   }
 
   function addQuickViewButtons() {
-    const productCards = document.querySelectorAll('.product-card'); // Adjust selector based on Zid's HTML structure
+    // Adjust these selectors based on Zid's actual HTML structure
+    const productCards = document.querySelectorAll('.product-item, product-item position-relative');
     productCards.forEach(card => {
       if (card.querySelector('.quick-view-btn')) return; // Skip if button already exists
 
       const button = document.createElement('button');
       button.className = 'quick-view-btn';
       button.textContent = 'Quick View';
+      button.style.cssText = `
+        background-color: #4CAF50;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 4px;
+      `;
+      
       button.addEventListener('click', (e) => {
         e.preventDefault();
-        openQuickView(card.dataset.productId); // Assume product ID is stored in data attribute
+        e.stopPropagation();
+        const productId = card.querySelector('[data-product-id]').getAttribute('data-product-id');
+        openQuickView(productId);
       });
 
-      const addToCartBtn = card.querySelector('.add-to-cart-btn'); // Adjust selector based on Zid's HTML structure
-      if (config.quickViewStyle === 'left') {
-        addToCartBtn.parentNode.insertBefore(button, addToCartBtn);
+      // Adjust this selector based on Zid's actual HTML structure
+      const addToCartBtn = card.querySelector('.add-to-cart-button, .add-to-cart, .d-flex flex-column justify-content-start, .btn btn-primary product-card-add-to-cart');
+      if (addToCartBtn) {
+        if (config.quickViewStyle === 'left') {
+          addToCartBtn.parentNode.insertBefore(button, addToCartBtn);
+        } else {
+          addToCartBtn.parentNode.insertBefore(button, addToCartBtn.nextSibling);
+        }
       } else {
-        addToCartBtn.parentNode.insertBefore(button, addToCartBtn.nextSibling);
+        card.appendChild(button);
       }
     });
   }
@@ -75,14 +97,28 @@
   function displayQuickViewModal(productData) {
     const modal = document.createElement('div');
     modal.className = 'quick-view-modal';
+    modal.style.cssText = `
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    `;
+
     modal.innerHTML = `
-      <div class="quick-view-content">
+      <div class="quick-view-content" style="background-color: #fefefe; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px;">
         <h2>${productData.name}</h2>
-        <img src="${productData.image}" alt="${productData.name}">
+        <img src="${productData.image}" alt="${productData.name}" style="max-width: 100%; height: auto;">
         <p>${productData.description}</p>
         <p>Price: ${productData.price}</p>
-        <button class="add-to-cart-btn">Add to Cart</button>
-        <button class="close-modal-btn">Close</button>
+        <button class="add-to-cart-btn" style="background-color: #4CAF50; border: none; color: white; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer;">Add to Cart</button>
+        <button class="close-modal-btn" style="background-color: #f44336; border: none; color: white; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer;">Close</button>
       </div>
     `;
 
@@ -99,6 +135,12 @@
 
   // Fetch config and apply on page load
   fetchConfig();
+
+  // Reapply config when the page content changes (e.g., for infinite scroll or AJAX updates)
+  const observer = new MutationObserver(() => {
+    fetchConfig();
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
 
   // Expose necessary functions
   window.HMStudioQuickView = {
