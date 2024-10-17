@@ -1,36 +1,29 @@
 // src/scripts/quickView.js
 
 (function() {
-  // Check if the script has already been initialized
-  if (window.HMStudioQuickViewInitialized) return;
-  window.HMStudioQuickViewInitialized = true;
-
-  let currentSettings = {
+  let config = {
     quickViewEnabled: false,
     quickViewStyle: 'right'
   };
 
-  function getManagerId() {
-    return document.body.getAttribute('data-manager-id');
-  }
-
-  function fetchSettings() {
-    const managerId = getManagerId();
+  function fetchConfig() {
+    const managerId = document.body.getAttribute('data-manager-id');
     if (!managerId) {
       console.error('Manager ID not found');
       return;
     }
-    fetch(`https://8f13-41-141-105-37.ngrok-free.app/api/quick-view-settings?managerId=${managerId}`)
+
+    fetch(`https://8f13-41-141-105-37.ngrok-free.app/getQuickViewConfig?managerId=${managerId}`)
       .then(response => response.json())
-      .then(settings => {
-        currentSettings = settings;
-        applySettings();
+      .then(newConfig => {
+        config = newConfig;
+        applyConfig();
       })
-      .catch(error => console.error('Failed to fetch quick view settings:', error));
+      .catch(error => console.error('Failed to fetch quick view config:', error));
   }
 
-  function applySettings() {
-    if (!currentSettings.quickViewEnabled) {
+  function applyConfig() {
+    if (!config.quickViewEnabled) {
       removeQuickViewButtons();
       return;
     }
@@ -51,7 +44,7 @@
       });
 
       const addToCartBtn = card.querySelector('.add-to-cart-btn'); // Adjust selector based on Zid's HTML structure
-      if (currentSettings.quickViewStyle === 'left') {
+      if (config.quickViewStyle === 'left') {
         addToCartBtn.parentNode.insertBefore(button, addToCartBtn);
       } else {
         addToCartBtn.parentNode.insertBefore(button, addToCartBtn.nextSibling);
@@ -104,18 +97,12 @@
     console.log('Adding product to cart:', productId);
   }
 
-  // Fetch settings and apply them on page load
-  fetchSettings();
+  // Fetch config and apply on page load
+  fetchConfig();
 
-  // Re-apply settings when the page content changes (e.g., infinite scroll)
-  const observer = new MutationObserver(() => {
-    fetchSettings();
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  // Expose public methods
+  // Expose necessary functions
   window.HMStudioQuickView = {
-    openQuickView: openQuickView,
-    refreshSettings: fetchSettings
+    refreshConfig: fetchConfig,
+    openQuickView: openQuickView
   };
 })();
