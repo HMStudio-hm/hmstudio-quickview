@@ -32,7 +32,7 @@
 
   function addQuickViewButtons() {
     // Adjust these selectors based on Zid's actual HTML structure
-    const productCards = document.querySelectorAll('.product-item, product-item position-relative');
+    const productCards = document.querySelectorAll('.add-to-cart-button, .add-to-cart, .d-flex flex-column justify-content-start, .btn btn-primary product-card-add-to-cart, .a.btn.btn-primary.product-card-add-to-cart');
     productCards.forEach(card => {
       if (card.querySelector('.quick-view-btn')) return; // Skip if button already exists
 
@@ -61,7 +61,7 @@
       });
 
       // Adjust this selector based on Zid's actual HTML structure
-      const addToCartBtn = card.querySelector('.add-to-cart-button, .add-to-cart, .d-flex flex-column justify-content-start, .btn btn-primary product-card-add-to-cart');
+      const addToCartBtn = card.querySelector('.add-to-cart-button, .add-to-cart, .d-flex flex-column justify-content-start, .btn btn-primary product-card-add-to-cart, .a.btn.btn-primary.product-card-add-to-cart');
       if (addToCartBtn) {
         if (config.quickViewStyle === 'left') {
           addToCartBtn.parentNode.insertBefore(button, addToCartBtn);
