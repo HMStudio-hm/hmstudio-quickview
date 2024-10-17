@@ -20,7 +20,7 @@
       console.error('Store ID not found');
       return;
     }
-    fetch(`https://1efe-105-156-116-5.ngrok-free.app/api/quick-view-settings?storeId=${storeId}`)
+    fetch(`https://fba2-41-141-105-37.ngrok-free.app/api/quick-view-settings?storeId=${storeId}`)
       .then(response => response.json())
       .then(settings => {
         currentSettings = settings;
