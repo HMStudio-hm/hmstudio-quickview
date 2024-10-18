@@ -12,8 +12,8 @@
       console.error('Store ID not found');
       return;
     }
-
-    fetch(`https://b78c-196-77-6-99.ngrok-free.app/getQuickViewConfig?storeId=${storeId}`)
+  
+    fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`)
       .then(response => response.json())
       .then(newConfig => {
         config = newConfig;
