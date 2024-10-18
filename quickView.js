@@ -7,20 +7,20 @@
   };
 
   function fetchConfig() {
-    const storeId = document.body.getAttribute('data-store-id');
-    if (!storeId) {
-      console.error('Store ID not found');
-      return;
-    }
-  
-    fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`)
-      .then(response => response.json())
-      .then(newConfig => {
-        config = newConfig;
-        applyConfig();
-      })
-      .catch(error => console.error('Failed to fetch quick view config:', error));
+  const storeId = document.body.getAttribute('data-store-id');
+  if (!storeId) {
+    console.error('Store ID not found');
+    return;
   }
+
+  fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`)
+    .then(response => response.json())
+    .then(newConfig => {
+      config = newConfig;
+      applyConfig();
+    })
+    .catch(error => console.error('Failed to fetch quick view config:', error));
+}
 
   function applyConfig() {
     if (!config.quickViewEnabled) {
