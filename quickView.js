@@ -7,13 +7,13 @@
   };
 
   function fetchConfig() {
-    const managerId = document.body.getAttribute('data-manager-id');
-    if (!managerId) {
-      console.error('Manager ID not found');
+    const storeId = document.body.getAttribute('data-store-id');
+    if (!storeId) {
+      console.error('Store ID not found');
       return;
     }
 
-    fetch(`https://8f13-41-141-105-37.ngrok-free.app/getQuickViewConfig?managerId=${managerId}`)
+    fetch(`https://b78c-196-77-6-99.ngrok-free.app/getQuickViewConfig?storeId=${storeId}`)
       .then(response => response.json())
       .then(newConfig => {
         config = newConfig;
@@ -31,7 +31,7 @@
   }
 
   function addQuickViewButtons() {
-    const productCards = document.querySelectorAll('.product-card'); // Adjust selector based on Zid's HTML structure
+    const productCards = document.querySelectorAll('.product-card, .product-item, .product-item position-relative, .product-item .position-relative  '); // Adjust selector based on Zid's HTML structure
     productCards.forEach(card => {
       if (card.querySelector('.quick-view-btn')) return; // Skip if button already exists
 
@@ -43,7 +43,7 @@
         openQuickView(card.dataset.productId); // Assume product ID is stored in data attribute
       });
 
-      const addToCartBtn = card.querySelector('.add-to-cart-btn'); // Adjust selector based on Zid's HTML structure
+      const addToCartBtn = card.querySelector('.add-to-cart-btn, .d-flex flex-column justify-content-start, .d-flex flex-column, .btn btn-primary product-card-add-to-cart, .btn btn-primary .product-card-add-to-cart, .btn btn-primary'); // Adjust selector based on Zid's HTML structure
       if (config.quickViewStyle === 'left') {
         addToCartBtn.parentNode.insertBefore(button, addToCartBtn);
       } else {
@@ -67,7 +67,11 @@
   }
 
   async function fetchProductData(productId) {
-    const response = await fetch(`https://api.zid.sa/v1/products/${productId}`);
+    const storeId = document.body.getAttribute('data-store-id');
+    if (!storeId) {
+      throw new Error('Store ID not found');
+    }
+    const response = await fetch(`https://api.zid.sa/v1/products/${productId}?store_id=${storeId}`);
     if (!response.ok) throw new Error('Failed to fetch product data');
     return response.json();
   }
@@ -93,8 +97,13 @@
   }
 
   function addToCart(productId) {
+    const storeId = document.body.getAttribute('data-store-id');
+    if (!storeId) {
+      console.error('Store ID not found');
+      return;
+    }
     // TODO: Implement add to cart functionality
-    console.log('Adding product to cart:', productId);
+    console.log('Adding product to cart:', productId, 'for store:', storeId);
   }
 
   // Fetch config and apply on page load
