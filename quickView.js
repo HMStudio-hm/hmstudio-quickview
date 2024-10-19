@@ -32,7 +32,7 @@
       return;
     }
   
-    fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`, {
+    fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig`, {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
