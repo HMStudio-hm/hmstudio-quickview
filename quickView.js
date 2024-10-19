@@ -1,6 +1,4 @@
 // src/scripts/quickView.js
-
-
 (function() {
   let config = {
     quickViewEnabled: false,
