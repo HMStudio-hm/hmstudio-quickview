@@ -1,71 +1,92 @@
-// src/scripts/quickView.js v1.1.5
+// src/scripts/quickView.js v1.1.6
 
 (function() {
   console.log('Quick View script initialized');
+
+  // Retrieve store ID from script URL
+  const scriptTag = document.currentScript;
+  const scriptSrc = scriptTag.src;
+  const urlParams = new URLSearchParams(new URL(scriptSrc).search);
+  const storeId = urlParams.get('storeId');
+
+  if (!storeId) {
+    console.error('Store ID not found in script URL');
+    return;
+  }
+
+  console.log('Store ID:', storeId);
 
   let config = {
     quickViewEnabled: false,
     quickViewStyle: 'right'
   };
 
-  function getStoreId() {
-    const urlParams = new URLSearchParams(document.currentScript.src.split('?')[1]);
-    return urlParams.get('storeId');
-  }
-
-  async function fetchConfig() {
-    const storeId = getStoreId();
-    if (!storeId) {
-      console.error('Store ID not found in script URL');
-      return;
-    }
-
-    try {
-      const response = await fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      config = await response.json();
-      console.log('Fetched config:', config);
-      applyConfig();
-    } catch (error) {
-      console.error('Error fetching config:', error);
-    }
+  function fetchConfig() {
+    console.log('Fetching config...');
+    
+    fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`)
+      .then(response => {
+        console.log('Config response status:', response.status);
+        return response.json();
+      })
+      .then(newConfig => {
+        console.log('Received config:', newConfig);
+        config = newConfig;
+        applyConfig();
+      })
+      .catch(error => console.error('Failed to fetch quick view config:', error));
   }
 
   function applyConfig() {
-    if (config.quickViewEnabled) {
-      addQuickViewButtons();
-    } else {
+    console.log('Applying config:', config);
+    if (!config.quickViewEnabled) {
+      console.log('Quick View is disabled, removing buttons');
       removeQuickViewButtons();
+      return;
     }
+    console.log('Quick View is enabled, adding buttons');
+    addQuickViewButtons();
   }
 
   function addQuickViewButtons() {
-    const productCards = document.querySelectorAll('.product-item'); // Adjust selector based on Zid's HTML structure
+    console.log('Adding Quick View buttons');
+    const productCards = document.querySelectorAll('.product-card'); // Adjust selector based on Zid's HTML structure
+    console.log('Found product cards:', productCards.length);
     productCards.forEach(card => {
-      if (card.querySelector('.quick-view-btn')) return;
-      
+      if (card.querySelector('.quick-view-btn')) {
+        console.log('Quick View button already exists for a product, skipping');
+        return;
+      }
+
       const button = document.createElement('button');
       button.className = 'quick-view-btn';
       button.textContent = 'Quick View';
       button.addEventListener('click', (e) => {
         e.preventDefault();
         const productId = card.dataset.productId;
+        console.log('Quick View button clicked for product ID:', productId);
         openQuickView(productId);
       });
 
-      const addToCartBtn = card.querySelector('.add-to-cart-btn, .product-item a.product-card-add-to-cart'); // Adjust selector based on Zid's HTML structure
+      const addToCartBtn = card.querySelector('.add-to-cart-btn'); // Adjust selector based on Zid's HTML structure
       if (addToCartBtn) {
+        console.log('Inserting Quick View button');
         if (config.quickViewStyle === 'left') {
           addToCartBtn.parentNode.insertBefore(button, addToCartBtn);
         } else {
           addToCartBtn.parentNode.insertBefore(button, addToCartBtn.nextSibling);
         }
+      } else {
+        console.error('Add to Cart button not found in product card');
       }
     });
   }
 
   function removeQuickViewButtons() {
-    document.querySelectorAll('.quick-view-btn').forEach(btn => btn.remove());
+    console.log('Removing Quick View buttons');
+    const quickViewButtons = document.querySelectorAll('.quick-view-btn');
+    quickViewButtons.forEach(button => button.remove());
+    console.log('Removed Quick View buttons:', quickViewButtons.length);
   }
 
   async function openQuickView(productId) {
