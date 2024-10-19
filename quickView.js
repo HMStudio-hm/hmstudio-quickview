@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.1.0
+// src/scripts/quickView.js v1.1.1
 
 (function() {
   console.log('Quick View script initialized');
@@ -8,11 +8,24 @@
     quickViewStyle: 'right'
   };
 
-  function fetchConfig() {
+  function getStoreId() {
+    return new Promise((resolve) => {
+      function checkForStoreId() {
+        const storeId = document.body.getAttribute('data-store-id');
+        if (storeId) {
+          resolve(storeId);
+        } else {
+          setTimeout(checkForStoreId, 100); // Check again after 100ms
+        }
+      }
+      checkForStoreId();
+    });
+  }
+
+  async function fetchConfig() {
     console.log('Fetching config...');
-    const storeId = document.body.getAttribute('data-store-id');
-    console.log('Store ID from attribute:', storeId);
-    console.log('Body attributes:', Array.from(document.body.attributes).map(attr => `${attr.name}="${attr.value}"`).join(', '));
+    const storeId = await getStoreId();
+    console.log('Store ID:', storeId);
     
     if (!storeId) {
       console.error('Store ID not found');
