@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.1.1
+// src/scripts/quickView.js v1.1.2
 
 (function() {
   console.log('Quick View script initialized');
@@ -9,56 +9,45 @@
   };
 
   function getStoreId() {
-    return new Promise((resolve) => {
-      function checkForStoreId() {
-        const storeId = document.body.getAttribute('data-store-id');
-        if (storeId) {
-          resolve(storeId);
-        } else {
-          setTimeout(checkForStoreId, 100); // Check again after 100ms
-        }
-      }
-      checkForStoreId();
-    });
+    if (window.HMStudioQuickViewConfig && window.HMStudioQuickViewConfig.storeId) {
+      console.log('Store ID found:', window.HMStudioQuickViewConfig.storeId);
+      return window.HMStudioQuickViewConfig.storeId;
+    }
+    console.error('Store ID not found in HMStudioQuickViewConfig');
+    return null;
   }
 
   async function fetchConfig() {
     console.log('Fetching config...');
-    const storeId = await getStoreId();
-    console.log('Store ID:', storeId);
-    
+    const storeId = getStoreId();
     if (!storeId) {
-      console.error('Store ID not found');
+      console.error('Failed to get store ID. Using default config.');
       return;
     }
 
-    fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`)
-      .then(response => {
-        console.log('Config response status:', response.status);
-        return response.json();
-      })
-      .then(newConfig => {
-        console.log('Received config:', newConfig);
-        config = newConfig;
-        applyConfig();
-      })
-      .catch(error => console.error('Failed to fetch quick view config:', error));
+    try {
+      const response = await fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      config = await response.json();
+      console.log('Fetched config:', config);
+    } catch (error) {
+      console.error('Error fetching config:', error);
+    }
   }
 
   function applyConfig() {
     console.log('Applying config:', config);
-    if (!config.quickViewEnabled) {
+    if (config.quickViewEnabled) {
+      console.log('Quick View is enabled, adding buttons');
+      addQuickViewButtons();
+    } else {
       console.log('Quick View is disabled, removing buttons');
       removeQuickViewButtons();
-      return;
     }
-    console.log('Quick View is enabled, adding buttons');
-    addQuickViewButtons();
   }
 
   function addQuickViewButtons() {
-    console.log('Adding Quick View buttons');
-    const productCards = document.querySelectorAll('.product-card'); // Adjust selector based on Zid's HTML structure
+    const productCards = document.querySelectorAll('.product-item'); // Adjust selector based on Zid's HTML structure
     console.log('Found product cards:', productCards.length);
     productCards.forEach(card => {
       if (card.querySelector('.quick-view-btn')) {
@@ -76,7 +65,7 @@
         openQuickView(productId);
       });
 
-      const addToCartBtn = card.querySelector('.add-to-cart-btn'); // Adjust selector based on Zid's HTML structure
+      const addToCartBtn = card.querySelector('.product-item a.product-card-add-to-cart, .product-item a.product-card-add-to-cart, .product-item a.btn-product-card-out-of-stock, .product-item a.btn-product-card-select-variant'); // Adjust selector based on Zid's HTML structure
       if (addToCartBtn) {
         console.log('Inserting Quick View button');
         if (config.quickViewStyle === 'left') {
@@ -153,20 +142,27 @@
   }
 
   // Initial setup
-  console.log('Running initial setup');
-  fetchConfig();
-
-  // Re-apply settings when the page content changes (e.g., infinite scroll)
-  const observer = new MutationObserver(() => {
-    console.log('Page content changed, re-applying Quick View');
+  (async function init() {
+    console.log('Running initial setup');
+    await fetchConfig();
     applyConfig();
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-  console.log('MutationObserver set up');
+
+    // Re-apply settings when the page content changes (e.g., infinite scroll)
+    const observer = new MutationObserver(() => {
+      console.log('Page content changed, re-applying Quick View');
+      applyConfig();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    console.log('MutationObserver set up');
+  })();
 
   // Expose necessary functions
   window.HMStudioQuickView = {
-    refreshConfig: fetchConfig,
+    refreshConfig: async () => {
+      console.log('Refreshing Quick View config');
+      await fetchConfig();
+      applyConfig();
+    },
     openQuickView: openQuickView
   };
   console.log('HMStudioQuickView object exposed to window');
