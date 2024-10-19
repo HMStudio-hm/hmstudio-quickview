@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.1.0
+// src/scripts/quickView.js v1.1.1
 
 (function() {
   console.log('Quick View script initialized');
@@ -10,26 +10,40 @@
 
   function fetchConfig() {
     console.log('Fetching config...');
-    const storeId = document.body.getAttribute('data-store-id');
-    console.log('Store ID from attribute:', storeId);
-    console.log('Body attributes:', Array.from(document.body.attributes).map(attr => `${attr.name}="${attr.value}"`).join(', '));
-    
-    if (!storeId) {
-      console.error('Store ID not found');
-      return;
+    const maxRetries = 5;
+    let retries = 0;
+  
+    function attemptFetch() {
+      const storeId = document.body.getAttribute('data-store-id');
+      console.log('Store ID from attribute:', storeId);
+      console.log('Body attributes:', Array.from(document.body.attributes).map(attr => `${attr.name}="${attr.value}"`).join(', '));
+      
+      if (!storeId) {
+        console.error('Store ID not found');
+        if (retries < maxRetries) {
+          retries++;
+          console.log(`Retrying in 1 second... (Attempt ${retries}/${maxRetries})`);
+          setTimeout(attemptFetch, 1000);
+        } else {
+          console.error('Max retries reached. Unable to fetch config.');
+        }
+        return;
+      }
+  
+      fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`)
+        .then(response => {
+          console.log('Config response status:', response.status);
+          return response.json();
+        })
+        .then(newConfig => {
+          console.log('Received config:', newConfig);
+          config = newConfig;
+          applyConfig();
+        })
+        .catch(error => console.error('Failed to fetch quick view config:', error));
     }
-
-    fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`)
-      .then(response => {
-        console.log('Config response status:', response.status);
-        return response.json();
-      })
-      .then(newConfig => {
-        console.log('Received config:', newConfig);
-        config = newConfig;
-        applyConfig();
-      })
-      .catch(error => console.error('Failed to fetch quick view config:', error));
+  
+    attemptFetch();
   }
 
   function applyConfig() {
