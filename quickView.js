@@ -1,7 +1,9 @@
-// src/scripts/quickView.js v1.1.2
+// src/scripts/quickView.js v1.1.3
 
 (function() {
   console.log('Quick View script initialized');
+  console.log('Window object:', window);
+  console.log('HMStudioQuickViewConfig:', window.HMStudioQuickViewConfig);
 
   let config = {
     quickViewEnabled: false,
@@ -14,6 +16,7 @@
       return window.HMStudioQuickViewConfig.storeId;
     }
     console.error('Store ID not found in HMStudioQuickViewConfig');
+    console.log('Current HMStudioQuickViewConfig:', window.HMStudioQuickViewConfig);
     return null;
   }
 
