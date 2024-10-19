@@ -1,30 +1,44 @@
-// src/scripts/quickView.js v1.1.6
+// src/scripts/quickView.js v1.1.7
 
 (function() {
   console.log('Quick View script initialized');
-
-  // Retrieve store ID from script URL
-  const scriptTag = document.currentScript;
-  const scriptSrc = scriptTag.src;
-  const urlParams = new URLSearchParams(new URL(scriptSrc).search);
-  const storeId = urlParams.get('storeId');
-
-  if (!storeId) {
-    console.error('Store ID not found in script URL');
-    return;
-  }
-
-  console.log('Store ID:', storeId);
 
   let config = {
     quickViewEnabled: false,
     quickViewStyle: 'right'
   };
 
+  function getStoreIdFromScriptTag() {
+    const scriptTag = document.currentScript || document.querySelector('script[src*="quickView.js"]');
+    if (!scriptTag) return null;
+    
+    const urlParams = new URLSearchParams(new URL(scriptTag.src).search);
+    return urlParams.get('storeId');
+  }
+
+  function getAuthTokenFromScriptTag() {
+    const scriptTag = document.currentScript || document.querySelector('script[src*="quickView.js"]');
+    if (!scriptTag) return null;
+    
+    const urlParams = new URLSearchParams(new URL(scriptTag.src).search);
+    return urlParams.get('authToken');
+  }
+
   function fetchConfig() {
     console.log('Fetching config...');
+    const storeId = getStoreIdFromScriptTag();
+    const authToken = getAuthTokenFromScriptTag();
     
-    fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`)
+    if (!storeId || !authToken) {
+      console.error('Store ID or Auth Token not found');
+      return;
+    }
+
+    fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    })
       .then(response => {
         console.log('Config response status:', response.status);
         return response.json();
@@ -101,7 +115,19 @@
 
   async function fetchProductData(productId) {
     console.log('Fetching product data for ID:', productId);
-    const response = await fetch(`https://api.zid.sa/v1/products/${productId}`);
+    const storeId = getStoreIdFromScriptTag();
+    const authToken = getAuthTokenFromScriptTag();
+    
+    if (!storeId || !authToken) {
+      throw new Error('Store ID or Auth Token not found');
+    }
+
+    const response = await fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getProductData?storeId=${storeId}&productId=${productId}`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+
     if (!response.ok) {
       console.error('Failed to fetch product data. Status:', response.status);
       throw new Error('Failed to fetch product data');
