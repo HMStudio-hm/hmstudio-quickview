@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.1.7
+// src/scripts/quickView.js v1.1.8
 
 (function() {
   console.log('Quick View script initialized');
@@ -9,18 +9,16 @@
   };
 
   function getStoreIdFromScriptTag() {
-    const scriptTag = document.currentScript || document.querySelector('script[src*="quickView.js"]');
-    if (!scriptTag) return null;
-    
-    const urlParams = new URLSearchParams(new URL(scriptTag.src).search);
+    const scriptTag = document.currentScript;
+    const scriptSrc = scriptTag.src;
+    const urlParams = new URLSearchParams(new URL(scriptSrc).search);
     return urlParams.get('storeId');
   }
-
+  
   function getAuthTokenFromScriptTag() {
-    const scriptTag = document.currentScript || document.querySelector('script[src*="quickView.js"]');
-    if (!scriptTag) return null;
-    
-    const urlParams = new URLSearchParams(new URL(scriptTag.src).search);
+    const scriptTag = document.currentScript;
+    const scriptSrc = scriptTag.src;
+    const urlParams = new URLSearchParams(new URL(scriptSrc).search);
     return urlParams.get('authToken');
   }
 
@@ -33,7 +31,7 @@
       console.error('Store ID or Auth Token not found');
       return;
     }
-
+  
     fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`, {
       headers: {
         'Authorization': `Bearer ${authToken}`
@@ -43,12 +41,18 @@
         console.log('Config response status:', response.status);
         return response.json();
       })
-      .then(newConfig => {
-        console.log('Received config:', newConfig);
-        config = newConfig;
+      .then(data => {
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        console.log('Received config:', data);
+        config = data;
         applyConfig();
       })
-      .catch(error => console.error('Failed to fetch quick view config:', error));
+      .catch(error => {
+        console.error('Failed to fetch quick view config:', error.message);
+        // Handle the error appropriately, maybe disable quick view functionality
+      });
   }
 
   function applyConfig() {
