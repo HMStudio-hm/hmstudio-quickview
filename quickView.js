@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.0.1 walakin blama ncree new tag ola release
+// src/scripts/quickView.js v1.1.0
 
 (function() {
   console.log('Quick View script initialized');
