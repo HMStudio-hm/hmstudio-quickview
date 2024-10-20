@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.2.8
+// src/scripts/quickView.js v1.2.9
 
 (function() {
   console.log('Quick View script initialized');
@@ -8,7 +8,7 @@
 
   function addQuickViewButtons() {
     console.log('Adding Quick View buttons');
-    const productCards = document.querySelectorAll('.product-card'); // Adjust selector based on Zid's HTML structure
+    const productCards = document.querySelectorAll('.product-item, .product-item position-relative'); // Adjust selector based on Zid's HTML structure
     console.log('Found product cards:', productCards.length);
     productCards.forEach(card => {
       if (card.querySelector('.quick-view-btn')) {
@@ -26,7 +26,7 @@
         openQuickView(productId);
       });
 
-      const addToCartBtn = card.querySelector('.add-to-cart-btn'); // Adjust selector based on Zid's HTML structure
+      const addToCartBtn = card.querySelector('.add-to-cart-btn, .d-flex flex-column justify-content-start, .product-item a.product-card-add-to-cart, .product-item a.btn-product-card-out-of-stock, .product-item a.btn-product-card-select-variant, .product-item a.product-card-add-to-cart, a.product-card-add-to-cart'); // Adjust selector based on Zid's HTML structure
       if (addToCartBtn) {
         console.log('Inserting Quick View button');
         if (config.quickViewStyle === 'left') {
