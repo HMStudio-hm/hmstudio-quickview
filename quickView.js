@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.2.2
+// src/scripts/quickView.js v1.2.3
 
 
 (function() {
@@ -22,12 +22,12 @@
     quickViewStyle: 'right'
   };
 
-  // New function to fetch config with retry
+  // Function to fetch config with retry
   function fetchConfigWithRetry(retries = 3, delay = 2000) {
     console.log(`Fetching config... (Attempts left: ${retries})`);
     
     // Use the API route instead of directly calling the Cloud Function
-    fetch(`https://14b3-105-157-83-165.ngrok-free.app/api/quick-view-settings?storeId=${storeId}`)
+    fetch(`https://${window.location.hostname}/api/quick-view-settings?storeId=${storeId}`)
       .then(response => {
         console.log('Config response status:', response.status);
         if (!response.ok) {
@@ -163,7 +163,6 @@
   console.log('Running initial setup');
   setTimeout(() => fetchConfigWithRetry(), 1000); // Wait 1 second before first attempt
 
-
   // Re-apply settings when the page content changes (e.g., infinite scroll)
   const observer = new MutationObserver(() => {
     console.log('Page content changed, re-applying Quick View');
@@ -174,7 +173,7 @@
 
   // Expose necessary functions
   window.HMStudioQuickView = {
-    refreshConfig: fetchConfig,
+    refreshConfig: fetchConfigWithRetry,  // Updated this line
     openQuickView: openQuickView
   };
   console.log('HMStudioQuickView object exposed to window');
