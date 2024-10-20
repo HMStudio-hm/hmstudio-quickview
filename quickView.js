@@ -1,30 +1,14 @@
-// src/scripts/quickView.js v1.2.7
+// src/scripts/quickView.js v1.2.8
 
 (function() {
   console.log('Quick View script initialized');
 
-  // Use the embedded configuration
-  let config = window.HMStudioQuickViewConfig || {
-    quickViewEnabled: false,
-    quickViewStyle: 'right'
-  };
-
-  console.log('Initial config:', config);
-
-  function applyConfig() {
-    console.log('Applying config:', config);
-    if (!config.quickViewEnabled) {
-      console.log('Quick View is disabled, removing buttons');
-      removeQuickViewButtons();
-      return;
-    }
-    console.log('Quick View is enabled, adding buttons');
-    addQuickViewButtons();
-  }
+  const config = window.HMStudioQuickViewConfig || { quickViewStyle: 'right' };
+  console.log('Quick View config:', config);
 
   function addQuickViewButtons() {
     console.log('Adding Quick View buttons');
-    const productCards = document.querySelectorAll('.product-item'); // Adjust selector based on Zid's HTML structure
+    const productCards = document.querySelectorAll('.product-card'); // Adjust selector based on Zid's HTML structure
     console.log('Found product cards:', productCards.length);
     productCards.forEach(card => {
       if (card.querySelector('.quick-view-btn')) {
@@ -54,13 +38,6 @@
         console.error('Add to Cart button not found in product card');
       }
     });
-  }
-
-  function removeQuickViewButtons() {
-    console.log('Removing Quick View buttons');
-    const quickViewButtons = document.querySelectorAll('.quick-view-btn');
-    quickViewButtons.forEach(button => button.remove());
-    console.log('Removed Quick View buttons:', quickViewButtons.length);
   }
 
   async function openQuickView(productId) {
@@ -120,31 +97,18 @@
 
   // Initial setup
   console.log('Running initial setup');
-  applyConfig();
+  addQuickViewButtons();
 
-  // Re-apply settings when the page content changes (e.g., infinite scroll)
+  // Re-apply Quick View buttons when the page content changes (e.g., infinite scroll)
   const observer = new MutationObserver(() => {
-    console.log('Page content changed, re-applying Quick View');
-    // Check if the config has been updated
-    if (window.HMStudioQuickViewConfig) {
-      console.log('Updated config found:', window.HMStudioQuickViewConfig);
-      config = window.HMStudioQuickViewConfig;
-    }
-    applyConfig();
+    console.log('Page content changed, re-applying Quick View buttons');
+    addQuickViewButtons();
   });
   observer.observe(document.body, { childList: true, subtree: true });
   console.log('MutationObserver set up');
 
   // Expose necessary functions
   window.HMStudioQuickView = {
-    refreshConfig: () => {
-      console.log('Refreshing config');
-      if (window.HMStudioQuickViewConfig) {
-        console.log('New config found:', window.HMStudioQuickViewConfig);
-        config = window.HMStudioQuickViewConfig;
-      }
-      applyConfig();
-    },
     openQuickView: openQuickView
   };
   console.log('HMStudioQuickView object exposed to window');
