@@ -1,15 +1,44 @@
-// src/scripts/quickView.js v1.2.5
+// src/scripts/quickView.js v1.2.6
 
 (function() {
   console.log('Quick View script initialized');
 
-  // Use the embedded configuration
-  let config = window.HMStudioQuickViewConfig || {
+  const db = firebase.firestore();
+  const storeId = document.body.getAttribute('data-store-id');
+
+  if (!storeId) {
+    console.error('Store ID not found');
+    return;
+  }
+
+  console.log('Store ID:', storeId);
+
+  let config = {
     quickViewEnabled: false,
     quickViewStyle: 'right'
   };
 
-  console.log('Using config:', config);
+  function fetchConfig() {
+    console.log('Fetching config from Firebase');
+    
+    db.collection('stores').doc(storeId).get()
+      .then((doc) => {
+        if (doc.exists) {
+          const storeData = doc.data();
+          console.log('Received config from Firebase:', storeData);
+          config = {
+            quickViewEnabled: storeData.quickViewEnabled || false,
+            quickViewStyle: storeData.quickViewStyle || 'right'
+          };
+          applyConfig();
+        } else {
+          console.error('Store document not found');
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching config from Firebase:', error);
+      });
+  }
 
   function applyConfig() {
     console.log('Applying config:', config);
@@ -24,7 +53,7 @@
 
   function addQuickViewButtons() {
     console.log('Adding Quick View buttons');
-    const productCards = document.querySelectorAll('.product-item'); // Adjust selector based on Zid's HTML structure
+    const productCards = document.querySelectorAll('.product-card'); // Adjust selector based on Zid's HTML structure
     console.log('Found product cards:', productCards.length);
     productCards.forEach(card => {
       if (card.querySelector('.quick-view-btn')) {
@@ -120,19 +149,19 @@
 
   // Initial setup
   console.log('Running initial setup');
-  applyConfig();
+  fetchConfig();
 
   // Re-apply settings when the page content changes (e.g., infinite scroll)
   const observer = new MutationObserver(() => {
     console.log('Page content changed, re-applying Quick View');
-    applyConfig();
+    fetchConfig();
   });
   observer.observe(document.body, { childList: true, subtree: true });
   console.log('MutationObserver set up');
 
   // Expose necessary functions
   window.HMStudioQuickView = {
-    refreshConfig: applyConfig,
+    refreshConfig: fetchConfig,
     openQuickView: openQuickView
   };
   console.log('HMStudioQuickView object exposed to window');
