@@ -1,5 +1,4 @@
-// src/scripts/quickView.js v1.2.3
-
+// src/scripts/quickView.js v1.2.4
 
 (function() {
   console.log('Quick View script initialized');
@@ -22,32 +21,34 @@
     quickViewStyle: 'right'
   };
 
-  // Function to fetch config with retry
-  function fetchConfigWithRetry(retries = 3, delay = 2000) {
-    console.log(`Fetching config... (Attempts left: ${retries})`);
+  // Function to fetch config from API
+  function fetchConfigFromAPI(retries = 3, delay = 2000) {
+    console.log(`Fetching config from API... (Attempts left: ${retries})`);
     
-    // Use the API route instead of directly calling the Cloud Function
-    fetch(`https://${window.location.hostname}/api/quick-view-settings?storeId=${storeId}`)
+    // Replace with your actual API URL
+    const apiUrl = 'https://14b3-105-157-83-165.ngrok-free.app/api/quick-view-settings';
+    
+    fetch(`${apiUrl}?storeId=${storeId}`)
       .then(response => {
-        console.log('Config response status:', response.status);
+        console.log('API response status:', response.status);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         return response.json();
       })
-      .then(newConfig => {
-        console.log('Received config:', newConfig);
-        if (newConfig.quickViewEnabled === undefined) {
+      .then(data => {
+        console.log('Received config from API:', data);
+        if (data.quickViewEnabled === undefined) {
           throw new Error('Invalid config received');
         }
-        config = newConfig;
+        config = data;
         applyConfig();
       })
       .catch(error => {
-        console.error('Failed to fetch quick view config:', error);
+        console.error('Error fetching config from API:', error);
         if (retries > 0) {
           console.log(`Retrying in ${delay}ms...`);
-          setTimeout(() => fetchConfigWithRetry(retries - 1, delay), delay);
+          setTimeout(() => fetchConfigFromAPI(retries - 1, delay), delay);
         }
       });
   }
@@ -161,7 +162,7 @@
 
   // Initial setup
   console.log('Running initial setup');
-  setTimeout(() => fetchConfigWithRetry(), 1000); // Wait 1 second before first attempt
+  setTimeout(() => fetchConfigFromAPI(), 1000); // Wait 1 second before first attempt
 
   // Re-apply settings when the page content changes (e.g., infinite scroll)
   const observer = new MutationObserver(() => {
@@ -173,7 +174,7 @@
 
   // Expose necessary functions
   window.HMStudioQuickView = {
-    refreshConfig: fetchConfigWithRetry,  // Updated this line
+    refreshConfig: fetchConfigFromAPI,
     openQuickView: openQuickView
   };
   console.log('HMStudioQuickView object exposed to window');
