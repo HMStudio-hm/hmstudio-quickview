@@ -1,14 +1,20 @@
-// src/scripts/quickView.js v1.3.0
+// src/scripts/quickView.js v1.3.1
 
 (function() {
   console.log('Quick View script initialized');
 
-  let config = { quickViewStyle: 'right' };
+  let config = { quickViewEnabled: false, quickViewStyle: 'right' };
+
+  function getStoreId() {
+    const scriptTag = document.currentScript;
+    const scriptUrl = new URL(scriptTag.src);
+    return scriptUrl.searchParams.get('storeId');
+  }
 
   function fetchConfig() {
-    const storeId = document.body.getAttribute('data-store-id');
+    const storeId = getStoreId();
     if (!storeId) {
-      console.error('Store ID not found');
+      console.error('Store ID not found in script URL');
       return;
     }
 
@@ -24,11 +30,15 @@
 
   function applyQuickView() {
     console.log('Applying Quick View with config:', config);
-    addQuickViewButtons();
+    if (config.quickViewEnabled) {
+      addQuickViewButtons();
+    } else {
+      removeQuickViewButtons();
+    }
   }
 
   function addQuickViewButtons() {
-    const productCards = document.querySelectorAll('.product-item, .product-item position-relative'); // Adjust selector based on Zid's HTML structure
+    const productCards = document.querySelectorAll('.product-card'); // Adjust selector based on Zid's HTML structure
     productCards.forEach(card => {
       if (card.querySelector('.quick-view-btn')) return;
 
@@ -41,7 +51,7 @@
         openQuickView(productId);
       });
 
-      const addToCartBtn = card.querySelector('.add-to-cart-btn, .d-flex flex-column justify-content-start, .product-item a.product-card-add-to-cart, .product-item a.btn-product-card-out-of-stock, .product-item a.btn-product-card-select-variant, .product-item a.product-card-add-to-cart, a.product-card-add-to-cart'); // Adjust selector based on Zid's HTML structure
+      const addToCartBtn = card.querySelector('.add-to-cart-btn'); // Adjust selector based on Zid's HTML structure
       if (addToCartBtn) {
         if (config.quickViewStyle === 'left') {
           addToCartBtn.parentNode.insertBefore(button, addToCartBtn);
@@ -50,6 +60,11 @@
         }
       }
     });
+  }
+
+  function removeQuickViewButtons() {
+    const quickViewButtons = document.querySelectorAll('.quick-view-btn');
+    quickViewButtons.forEach(button => button.remove());
   }
 
   async function openQuickView(productId) {
