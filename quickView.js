@@ -1,71 +1,40 @@
-// src/scripts/quickView.js v1.2.0
+// src/scripts/quickView.js v1.2.1
 
 (function() {
   console.log('Quick View script initialized');
+
+  // Retrieve store ID from script URL
+  const scriptTag = document.currentScript;
+  const scriptSrc = scriptTag.src;
+  const urlParams = new URLSearchParams(new URL(scriptSrc).search);
+  const storeId = urlParams.get('storeId');
+
+  if (!storeId) {
+    console.error('Store ID not found in script URL');
+    return;
+  }
+
+  console.log('Store ID:', storeId);
 
   let config = {
     quickViewEnabled: false,
     quickViewStyle: 'right'
   };
 
-  function init() {
-    fetchConfig();
-  }
-
-  function fetchConfig(retryCount = 0) {
-    console.log('Fetching config... Attempt:', retryCount + 1);
-    const storeId = getParamFromUrl('storeId');
-    const authToken = getParamFromUrl('authToken');
+  function fetchConfig() {
+    console.log('Fetching config...');
     
-    if (!storeId || !authToken) {
-      console.error('Store ID or Auth Token not found in URL parameters');
-      return;
-    }
-  
-    fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`, {
-      headers: {
-        'Authorization': `Bearer ${authToken}`
-      }
-    })
+    fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`)
       .then(response => {
         console.log('Config response status:', response.status);
         return response.json();
       })
-      .then(data => {
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        console.log('Received raw config data:', data);
-        if (!data.quickViewEnabled && retryCount < 3) {
-          console.log('Quick View not enabled, retrying in 2 seconds...');
-          setTimeout(() => fetchConfig(retryCount + 1), 2000);
-        } else {
-          config = data;
-          console.log('Updated config object:', config);
-          applyConfig();
-        }
+      .then(newConfig => {
+        console.log('Received config:', newConfig);
+        config = newConfig;
+        applyConfig();
       })
-      .catch(error => {
-        console.error('Failed to fetch quick view config:', error.message);
-        if (retryCount < 3) {
-          console.log('Retrying in 2 seconds...');
-          setTimeout(() => fetchConfig(retryCount + 1), 2000);
-        }
-      });
-  }
-
-  function getStoreIdFromScriptTag() {
-    const scriptTag = document.currentScript;
-    const scriptSrc = scriptTag.src;
-    const urlParams = new URLSearchParams(new URL(scriptSrc).search);
-    return urlParams.get('storeId');
-  }
-
-  function getAuthTokenFromScriptTag() {
-    const scriptTag = document.currentScript;
-    const scriptSrc = scriptTag.src;
-    const urlParams = new URLSearchParams(new URL(scriptSrc).search);
-    return urlParams.get('authToken');
+      .catch(error => console.error('Failed to fetch quick view config:', error));
   }
 
   function applyConfig() {
@@ -132,14 +101,7 @@
 
   async function fetchProductData(productId) {
     console.log('Fetching product data for ID:', productId);
-    const storeId = getStoreIdFromScriptTag();
-    const authToken = getAuthTokenFromScriptTag();
-    
-    const response = await fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getProductData?storeId=${storeId}&productId=${productId}`, {
-      headers: {
-        'Authorization': `Bearer ${authToken}`
-      }
-    });
+    const response = await fetch(`https://api.zid.sa/v1/products/${productId}`);
     if (!response.ok) {
       console.error('Failed to fetch product data. Status:', response.status);
       throw new Error('Failed to fetch product data');
@@ -182,8 +144,9 @@
     // TODO: Implement actual add to cart functionality
   }
 
-  // Start the initialization process
-  init();
+  // Initial setup
+  console.log('Running initial setup');
+  fetchConfig();
 
   // Re-apply settings when the page content changes (e.g., infinite scroll)
   const observer = new MutationObserver(() => {
