@@ -1,4 +1,5 @@
-// src/scripts/quickView.js v1.2.1
+// src/scripts/quickView.js v1.2.2
+
 
 (function() {
   console.log('Quick View script initialized');
@@ -21,20 +22,34 @@
     quickViewStyle: 'right'
   };
 
-  function fetchConfig() {
-    console.log('Fetching config...');
+  // New function to fetch config with retry
+  function fetchConfigWithRetry(retries = 3, delay = 2000) {
+    console.log(`Fetching config... (Attempts left: ${retries})`);
     
-    fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`)
+    // Use the API route instead of directly calling the Cloud Function
+    fetch(`https://14b3-105-157-83-165.ngrok-free.app/api/quick-view-settings?storeId=${storeId}`)
       .then(response => {
         console.log('Config response status:', response.status);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         return response.json();
       })
       .then(newConfig => {
         console.log('Received config:', newConfig);
+        if (newConfig.quickViewEnabled === undefined) {
+          throw new Error('Invalid config received');
+        }
         config = newConfig;
         applyConfig();
       })
-      .catch(error => console.error('Failed to fetch quick view config:', error));
+      .catch(error => {
+        console.error('Failed to fetch quick view config:', error);
+        if (retries > 0) {
+          console.log(`Retrying in ${delay}ms...`);
+          setTimeout(() => fetchConfigWithRetry(retries - 1, delay), delay);
+        }
+      });
   }
 
   function applyConfig() {
@@ -146,7 +161,8 @@
 
   // Initial setup
   console.log('Running initial setup');
-  fetchConfig();
+  setTimeout(() => fetchConfigWithRetry(), 1000); // Wait 1 second before first attempt
+
 
   // Re-apply settings when the page content changes (e.g., infinite scroll)
   const observer = new MutationObserver(() => {
