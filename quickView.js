@@ -1,57 +1,15 @@
-// src/scripts/quickView.js v1.2.4
+// src/scripts/quickView.js v1.2.5
 
 (function() {
   console.log('Quick View script initialized');
 
-  // Retrieve store ID from script URL
-  const scriptTag = document.currentScript;
-  const scriptSrc = scriptTag.src;
-  const urlParams = new URLSearchParams(new URL(scriptSrc).search);
-  const storeId = urlParams.get('storeId');
-
-  if (!storeId) {
-    console.error('Store ID not found in script URL');
-    return;
-  }
-
-  console.log('Store ID:', storeId);
-
-  let config = {
+  // Use the embedded configuration
+  let config = window.HMStudioQuickViewConfig || {
     quickViewEnabled: false,
     quickViewStyle: 'right'
   };
 
-  // Function to fetch config from API
-  function fetchConfigFromAPI(retries = 3, delay = 2000) {
-    console.log(`Fetching config from API... (Attempts left: ${retries})`);
-    
-    // Replace with your actual API URL
-    const apiUrl = 'https://14b3-105-157-83-165.ngrok-free.app/api/quick-view-settings';
-    
-    fetch(`${apiUrl}?storeId=${storeId}`)
-      .then(response => {
-        console.log('API response status:', response.status);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log('Received config from API:', data);
-        if (data.quickViewEnabled === undefined) {
-          throw new Error('Invalid config received');
-        }
-        config = data;
-        applyConfig();
-      })
-      .catch(error => {
-        console.error('Error fetching config from API:', error);
-        if (retries > 0) {
-          console.log(`Retrying in ${delay}ms...`);
-          setTimeout(() => fetchConfigFromAPI(retries - 1, delay), delay);
-        }
-      });
-  }
+  console.log('Using config:', config);
 
   function applyConfig() {
     console.log('Applying config:', config);
@@ -66,7 +24,7 @@
 
   function addQuickViewButtons() {
     console.log('Adding Quick View buttons');
-    const productCards = document.querySelectorAll('.product-card'); // Adjust selector based on Zid's HTML structure
+    const productCards = document.querySelectorAll('.product-item'); // Adjust selector based on Zid's HTML structure
     console.log('Found product cards:', productCards.length);
     productCards.forEach(card => {
       if (card.querySelector('.quick-view-btn')) {
@@ -162,7 +120,7 @@
 
   // Initial setup
   console.log('Running initial setup');
-  setTimeout(() => fetchConfigFromAPI(), 1000); // Wait 1 second before first attempt
+  applyConfig();
 
   // Re-apply settings when the page content changes (e.g., infinite scroll)
   const observer = new MutationObserver(() => {
@@ -174,7 +132,7 @@
 
   // Expose necessary functions
   window.HMStudioQuickView = {
-    refreshConfig: fetchConfigFromAPI,
+    refreshConfig: applyConfig,
     openQuickView: openQuickView
   };
   console.log('HMStudioQuickView object exposed to window');
