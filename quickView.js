@@ -1,46 +1,20 @@
-// src/scripts/quickView.js v1.3.1
+// src/scripts/quickView.js v1.3.2
 
 (function() {
   console.log('Quick View script initialized');
 
-  let config = { quickViewEnabled: false, quickViewStyle: 'right' };
-
-  function getStoreId() {
-    const scriptTag = document.currentScript;
-    const scriptUrl = new URL(scriptTag.src);
-    return scriptUrl.searchParams.get('storeId');
-  }
-
-  function fetchConfig() {
-    const storeId = getStoreId();
-    if (!storeId) {
-      console.error('Store ID not found in script URL');
-      return;
-    }
-
-    fetch(`https://europe-west3-${FIREBASE_PROJECT_ID}.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`)
-      .then(response => response.json())
-      .then(data => {
-        config = data;
-        console.log('Fetched config:', config);
-        applyQuickView();
-      })
-      .catch(error => console.error('Failed to fetch config:', error));
-  }
-
-  function applyQuickView() {
-    console.log('Applying Quick View with config:', config);
-    if (config.quickViewEnabled) {
-      addQuickViewButtons();
-    } else {
-      removeQuickViewButtons();
-    }
-  }
+  const config = window.HMStudioQuickViewConfig || { quickViewStyle: 'right' };
+  console.log('Quick View config:', config);
 
   function addQuickViewButtons() {
-    const productCards = document.querySelectorAll('.product-card'); // Adjust selector based on Zid's HTML structure
+    console.log('Adding Quick View buttons');
+    const productCards = document.querySelectorAll('.product-item, .product-item position-relative'); // Adjust selector based on Zid's HTML structure
+    console.log('Found product cards:', productCards.length);
     productCards.forEach(card => {
-      if (card.querySelector('.quick-view-btn')) return;
+      if (card.querySelector('.quick-view-btn')) {
+        console.log('Quick View button already exists for a product, skipping');
+        return;
+      }
 
       const button = document.createElement('button');
       button.className = 'quick-view-btn';
@@ -48,26 +22,26 @@
       button.addEventListener('click', (e) => {
         e.preventDefault();
         const productId = card.dataset.productId;
+        console.log('Quick View button clicked for product ID:', productId);
         openQuickView(productId);
       });
 
-      const addToCartBtn = card.querySelector('.add-to-cart-btn'); // Adjust selector based on Zid's HTML structure
+      const addToCartBtn = card.querySelector('.add-to-cart-btn, .d-flex flex-column justify-content-start, .product-item a.product-card-add-to-cart, .product-item a.btn-product-card-out-of-stock, .product-item a.btn-product-card-select-variant, .product-item a.product-card-add-to-cart, a.product-card-add-to-cart'); // Adjust selector based on Zid's HTML structure
       if (addToCartBtn) {
+        console.log('Inserting Quick View button');
         if (config.quickViewStyle === 'left') {
           addToCartBtn.parentNode.insertBefore(button, addToCartBtn);
         } else {
           addToCartBtn.parentNode.insertBefore(button, addToCartBtn.nextSibling);
         }
+      } else {
+        console.error('Add to Cart button not found in product card');
       }
     });
   }
 
-  function removeQuickViewButtons() {
-    const quickViewButtons = document.querySelectorAll('.quick-view-btn');
-    quickViewButtons.forEach(button => button.remove());
-  }
-
   async function openQuickView(productId) {
+    console.log('Opening Quick View for product ID:', productId);
     try {
       const productData = await fetchProductData(productId);
       displayQuickViewModal(productData);
@@ -77,14 +51,19 @@
   }
 
   async function fetchProductData(productId) {
+    console.log('Fetching product data for ID:', productId);
     const response = await fetch(`https://api.zid.sa/v1/products/${productId}`);
     if (!response.ok) {
+      console.error('Failed to fetch product data. Status:', response.status);
       throw new Error('Failed to fetch product data');
     }
-    return response.json();
+    const data = await response.json();
+    console.log('Received product data:', data);
+    return data;
   }
 
   function displayQuickViewModal(productData) {
+    console.log('Displaying Quick View modal for product:', productData.name);
     const modal = document.createElement('div');
     modal.className = 'quick-view-modal';
     modal.innerHTML = `
@@ -98,10 +77,17 @@
       </div>
     `;
 
-    modal.querySelector('.add-to-cart-btn').addEventListener('click', () => addToCart(productData.id));
-    modal.querySelector('.close-modal-btn').addEventListener('click', () => modal.remove());
+    modal.querySelector('.add-to-cart-btn').addEventListener('click', () => {
+      console.log('Add to Cart clicked in Quick View modal');
+      addToCart(productData.id);
+    });
+    modal.querySelector('.close-modal-btn').addEventListener('click', () => {
+      console.log('Closing Quick View modal');
+      modal.remove();
+    });
 
     document.body.appendChild(modal);
+    console.log('Quick View modal added to DOM');
   }
 
   function addToCart(productId) {
@@ -110,18 +96,20 @@
   }
 
   // Initial setup
-  fetchConfig();
+  console.log('Running initial setup');
+  addQuickViewButtons();
 
-  // Re-apply Quick View when the page content changes (e.g., infinite scroll)
+  // Re-apply Quick View buttons when the page content changes (e.g., infinite scroll)
   const observer = new MutationObserver(() => {
-    console.log('Page content changed, re-applying Quick View');
-    applyQuickView();
+    console.log('Page content changed, re-applying Quick View buttons');
+    addQuickViewButtons();
   });
   observer.observe(document.body, { childList: true, subtree: true });
+  console.log('MutationObserver set up');
 
   // Expose necessary functions
   window.HMStudioQuickView = {
-    refreshConfig: fetchConfig,
     openQuickView: openQuickView
   };
+  console.log('HMStudioQuickView object exposed to window');
 })();
