@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.1.9
+// src/scripts/quickView.js v1.2.0
 
 (function() {
   console.log('Quick View script initialized');
@@ -14,14 +14,14 @@
 
   function fetchConfig(retryCount = 0) {
     console.log('Fetching config... Attempt:', retryCount + 1);
-    const storeId = getStoreIdFromScriptTag();
-    const authToken = getAuthTokenFromScriptTag();
+    const storeId = getParamFromUrl('storeId');
+    const authToken = getParamFromUrl('authToken');
     
     if (!storeId || !authToken) {
-      console.error('Store ID or Auth Token not found');
+      console.error('Store ID or Auth Token not found in URL parameters');
       return;
     }
-
+  
     fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewConfig?storeId=${storeId}`, {
       headers: {
         'Authorization': `Bearer ${authToken}`
