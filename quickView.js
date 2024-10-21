@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.3.6
+// src/scripts/quickView.js v1.3.4 jdida
 
 (function() {
   console.log('Quick View script initialized');
@@ -6,29 +6,10 @@
   const config = window.HMStudioQuickViewConfig || { 
     quickViewStyle: 'right',
     storeId: '',
-    firebaseConfig: null
+    authorization: '',
+    accessToken: ''
   };
   console.log('Quick View config:', config);
-
-  function loadFirebase(callback) {
-    if (typeof firebase === 'undefined' && config.firebaseConfig) {
-      const script = document.createElement('script');
-      script.src = 'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js';
-      script.onload = function() {
-        const functionsScript = document.createElement('script');
-        functionsScript.src = 'https://www.gstatic.com/firebasejs/8.10.0/firebase-functions.js';
-        functionsScript.onload = function() {
-          firebase.initializeApp(config.firebaseConfig);
-          console.log('Firebase initialized');
-          callback();
-        };
-        document.head.appendChild(functionsScript);
-      };
-      document.head.appendChild(script);
-    } else {
-      callback();
-    }
-  }
 
   function addQuickViewButtons() {
     console.log('Adding Quick View buttons');
@@ -79,22 +60,36 @@
       displayQuickViewModal(productData);
     } catch (error) {
       console.error('Failed to open quick view:', error);
+      // You might want to display an error message to the user here
     }
   }
 
   async function fetchProductData(productId) {
     console.log('Fetching product data for ID:', productId);
+    const url = `https://api.zid.sa/v1/products/${productId}/`;
+    
+    const headers = {
+      'Store-Id': config.storeId,
+      'Role': 'Manager',
+      'Authorization': `Bearer ${config.authorization}`,
+      'Access-Token': config.accessToken,
+      'Content-Type': 'application/json'
+    };
+
     try {
-      if (typeof firebase !== 'undefined' && firebase.functions) {
-        const getProductDataFunction = firebase.functions().httpsCallable('getProductData');
-        const result = await getProductDataFunction({ productId, storeId: config.storeId });
-        console.log('Received product data:', result.data);
-        return result.data;
-      } else {
-        console.warn('Firebase not available, falling back to direct API call');
-        // Implement a fallback method here if needed
-        throw new Error('Firebase is not available and no fallback method is implemented');
+      const response = await fetch(url, { 
+        method: 'GET',
+        headers: headers
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch product data. Status:', response.status);
+        throw new Error(`Failed to fetch product data: ${response.statusText}`);
       }
+
+      const data = await response.json();
+      console.log('Received product data:', data);
+      return data;
     } catch (error) {
       console.error('Error fetching product data:', error);
       throw error;
@@ -107,9 +102,9 @@
     modal.className = 'quick-view-modal';
     modal.innerHTML = `
       <div class="quick-view-content">
-        <h2>${productData.name.en}</h2>
-        <img src="${productData.image}" alt="${productData.name.en}">
-        <p>${productData.description.en}</p>
+        <h2>${productData.name.en || productData.name}</h2>
+        <img src="${productData.image}" alt="${productData.name.en || productData.name}">
+        <p>${productData.description.en || productData.description}</p>
         <p>Price: ${productData.price}</p>
         <button class="add-to-cart-btn">Add to Cart</button>
         <button class="close-modal-btn">Close</button>
@@ -132,26 +127,24 @@
   function addToCart(productId) {
     console.log('Adding product to cart:', productId);
     // TODO: Implement actual add to cart functionality
+    // This might involve calling a Zid API or triggering an existing add to cart function
   }
 
-  function initQuickView() {
+  // Initial setup
+  console.log('Running initial setup');
+  addQuickViewButtons();
+
+  // Re-apply Quick View buttons when the page content changes (e.g., infinite scroll)
+  const observer = new MutationObserver(() => {
+    console.log('Page content changed, re-applying Quick View buttons');
     addQuickViewButtons();
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+  console.log('MutationObserver set up');
 
-    // Re-apply Quick View buttons when the page content changes (e.g., infinite scroll)
-    const observer = new MutationObserver(() => {
-      console.log('Page content changed, re-applying Quick View buttons');
-      addQuickViewButtons();
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-    console.log('MutationObserver set up');
-
-    // Expose necessary functions
-    window.HMStudioQuickView = {
-      openQuickView: openQuickView
-    };
-    console.log('HMStudioQuickView object exposed to window');
-  }
-
-  // Start the initialization process
-  loadFirebase(initQuickView);
+  // Expose necessary functions
+  window.HMStudioQuickView = {
+    openQuickView: openQuickView
+  };
+  console.log('HMStudioQuickView object exposed to window');
 })();
