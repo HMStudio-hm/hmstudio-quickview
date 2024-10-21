@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.4.1
+// src/scripts/quickView.js v1.4.2
 
 (function() {
   console.log('Quick View script initialized');
