@@ -1,11 +1,11 @@
-// src/scripts/quickView.js v1.3.8
+// src/scripts/quickView.js v1.3.9
 
 (function() {
   console.log('Quick View script initialized');
 
   const config = window.HMStudioQuickViewConfig || { 
     quickViewStyle: 'right',
-    storeId: '',
+    storeId: '646181', // Hardcoded store ID for testing
     authorization: '',
     accessToken: ''
   };
@@ -63,13 +63,12 @@
       // You might want to display an error message to the user here
     }
   }
-
   async function fetchProductData(productId) {
     console.log('Fetching product data for ID:', productId);
     const url = `https://api.zid.sa/v1/products/${productId}/`;
     
     const headers = {
-      'Store-Id': config.storeId,
+      'Store-Id': '646181', // Hardcoded store ID
       'Role': 'Manager',
       'Authorization': `Bearer ${config.authorization}`,
       'Access-Token': config.accessToken,
@@ -84,6 +83,8 @@
 
       if (!response.ok) {
         console.error('Failed to fetch product data. Status:', response.status);
+        const responseText = await response.text();
+        console.error('Response text:', responseText);
         throw new Error(`Failed to fetch product data: ${response.statusText}`);
       }
 
