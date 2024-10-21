@@ -1,20 +1,26 @@
-// src/scripts/quickView.js v1.4.2
+// src/scripts/quickView.js v1.4.3
 
 (function() {
   console.log('Quick View script initialized');
 
-  const config = window.HMStudioQuickViewConfig || { 
-    quickViewStyle: 'right',
-    storeId: '',
-    authorization: '',
-    accessToken: ''
-  };
-  console.log('Quick View config:', config);
+  function getStoreIdFromUrl() {
+    const scriptTag = document.currentScript;
+    const scriptUrl = new URL(scriptTag.src);
+    return scriptUrl.searchParams.get('storeId');
+  }
 
-  if (!config.storeId) {
-    console.error('Store ID is missing in the configuration');
+  const storeId = getStoreIdFromUrl();
+  if (!storeId) {
+    console.error('Store ID not found in script URL');
     return;
   }
+
+  const config = {
+    ...window.HMStudioQuickViewConfig,
+    storeId: storeId
+  };
+
+  console.log('Quick View config:', config);
 
   function addQuickViewButtons() {
     console.log('Adding Quick View buttons');
@@ -65,9 +71,9 @@
       displayQuickViewModal(productData);
     } catch (error) {
       console.error('Failed to open quick view:', error);
-      // You might want to display an error message to the user here
     }
   }
+
   async function fetchProductData(productId) {
     console.log('Fetching product data for ID:', productId);
     const url = `https://api.zid.sa/v1/products/${productId}/`;
