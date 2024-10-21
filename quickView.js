@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.4.5
+// src/scripts/quickView.js v1.4.6
 
 (function() {
   console.log('Quick View script initialized');
@@ -23,7 +23,6 @@
 
   console.log('Quick View config:', config);
 
-
   function addQuickViewButtons() {
     console.log('Adding Quick View buttons');
     const productCards = document.querySelectorAll('.product-item.position-relative');
@@ -45,6 +44,24 @@
           const button = document.createElement('button');
           button.className = 'quick-view-btn';
           button.textContent = 'Quick View';
+          button.style.cssText = `
+            padding: 8px 16px;
+            margin: 0 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #ffffff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+          `;
+
+          button.addEventListener('mouseover', () => {
+            button.style.backgroundColor = '#f0f0f0';
+          });
+
+          button.addEventListener('mouseout', () => {
+            button.style.backgroundColor = '#ffffff';
+          });
+
           button.addEventListener('click', (e) => {
             e.preventDefault();
             console.log('Quick View button clicked for product ID:', productId);
@@ -66,40 +83,13 @@
     });
   }
 
-  async function openQuickView(productId) {
-    console.log('Opening Quick View for product ID:', productId);
-    try {
-      const productData = await fetchProductData(productId);
-      displayQuickViewModal(productData);
-    } catch (error) {
-      console.error('Failed to open quick view:', error);
-    }
-  }
-
   async function fetchProductData(productId) {
     console.log('Fetching product data for ID:', productId);
-    const url = `https://api.zid.sa/v1/products/${productId}/`;
+    // Replace with your actual Firebase project ID
+    const url = `https://europe-west3-hmstudio-85f42.cloudfunctions.net/getProductData?storeId=${config.storeId}&productId=${productId}`;
     
-    // Log the headers we're about to send
-    console.log('Request headers:', {
-      'Store-Id': config.storeId,
-      'Role': 'Manager',
-      'Authorization': `Bearer ${config.authorization}`,
-      'Access-Token': config.accessToken
-    });
-
     try {
-      const response = await fetch(url, { 
-        method: 'GET',
-        headers: {
-          'Store-Id': config.storeId,
-          'Role': 'Manager',
-          'Authorization': `Bearer ${config.authorization}`,
-          'Access-Token': config.accessToken,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await fetch(url);
 
       if (!response.ok) {
         const responseText = await response.text();
@@ -114,6 +104,16 @@
     } catch (error) {
       console.error('Error fetching product data:', error);
       throw error;
+    }
+  }
+
+  async function openQuickView(productId) {
+    console.log('Opening Quick View for product ID:', productId);
+    try {
+      const productData = await fetchProductData(productId);
+      displayQuickViewModal(productData);
+    } catch (error) {
+      console.error('Failed to open quick view:', error);
     }
   }
 
@@ -146,19 +146,41 @@
     content.style.cssText = `
       background-color: white;
       padding: 20px;
-      border-radius: 5px;
+      border-radius: 8px;
       max-width: 80%;
-      max-height: 80%;
+      max-height: 80vh;
       overflow-y: auto;
+      position: relative;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     `;
 
     content.innerHTML = `
-      <h2>${productData.name.en || productData.name}</h2>
-      <img src="${productData.image}" alt="${productData.name.en || productData.name}" style="max-width: 100%; height: auto;">
-      <p>${productData.description.en || productData.description}</p>
-      <p>Price: ${productData.price}</p>
-      <button class="add-to-cart-btn">Add to Cart</button>
-      <button class="close-modal-btn">Close</button>
+      <h2 style="margin: 0 0 15px 0; font-size: 1.5em;">${productData.name.en || productData.name}</h2>
+      <img 
+        src="${productData.image}" 
+        alt="${productData.name.en || productData.name}" 
+        style="max-width: 100%; height: auto; margin-bottom: 15px;"
+      >
+      <p style="margin-bottom: 15px;">${productData.description.en || productData.description}</p>
+      <p style="font-size: 1.2em; font-weight: bold; margin-bottom: 20px;">Price: ${productData.price}</p>
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="add-to-cart-btn" style="
+          padding: 10px 20px;
+          background-color: #4CAF50;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+        ">Add to Cart</button>
+        <button class="close-modal-btn" style="
+          padding: 10px 20px;
+          background-color: #f44336;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+        ">Close</button>
+      </div>
     `;
 
     modal.appendChild(content);
@@ -171,6 +193,14 @@
     content.querySelector('.close-modal-btn').addEventListener('click', () => {
       console.log('Closing Quick View modal');
       modal.remove();
+    });
+
+    // Close modal when clicking outside the content
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        console.log('Closing Quick View modal (clicked outside)');
+        modal.remove();
+      }
     });
 
     document.body.appendChild(modal);
