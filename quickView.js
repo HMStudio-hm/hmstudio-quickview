@@ -5,7 +5,7 @@
 
   const config = window.HMStudioQuickViewConfig || { 
     quickViewStyle: 'right',
-    storeId: '646181', // Hardcoded store ID for testing
+    storeId: '',
     authorization: '',
     accessToken: ''
   };
