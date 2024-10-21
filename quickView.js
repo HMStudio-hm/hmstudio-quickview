@@ -1,13 +1,11 @@
-// src/scripts/quickView.js v1.3.4
+// src/scripts/quickView.js v1.3.5
 
 (function() {
   console.log('Quick View script initialized');
 
   const config = window.HMStudioQuickViewConfig || { 
     quickViewStyle: 'right',
-    storeId: '',
-    authorization: '',
-    accessToken: ''
+    storeId: ''
   };
   console.log('Quick View config:', config);
 
@@ -65,26 +63,11 @@
 
   async function fetchProductData(productId) {
     console.log('Fetching product data for ID:', productId);
-    const url = `https://api.zid.sa/v1/products/${productId}/`;
-    
-    const headers = {
-      'Store-Id': config.storeId,
-      'Authorization': `Bearer ${config.authorization}`,
-      'Access-Token': config.accessToken,
-      'Role': 'Manager',
-      'Accept-Language': 'en',
-      'Content-Type': 'application/json'
-    };
-
     try {
-      const response = await fetch(url, { headers });
-      if (!response.ok) {
-        console.error('Failed to fetch product data. Status:', response.status);
-        throw new Error('Failed to fetch product data');
-      }
-      const data = await response.json();
-      console.log('Received product data:', data);
-      return data;
+      const getProductDataFunction = firebase.functions().httpsCallable('getProductData');
+      const result = await getProductDataFunction({ productId, storeId: config.storeId });
+      console.log('Received product data:', result.data);
+      return result.data;
     } catch (error) {
       console.error('Error fetching product data:', error);
       throw error;
