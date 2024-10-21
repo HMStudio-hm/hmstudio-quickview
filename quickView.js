@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.4.4
+// src/scripts/quickView.js v1.4.5
 
 (function() {
   console.log('Quick View script initialized');
@@ -7,7 +7,6 @@
     const scriptTag = document.currentScript;
     const scriptUrl = new URL(scriptTag.src);
     const storeId = scriptUrl.searchParams.get('storeId');
-    // Remove any additional parameters from storeId
     return storeId ? storeId.split('?')[0] : null;
   }
 
@@ -23,6 +22,7 @@
   };
 
   console.log('Quick View config:', config);
+
 
   function addQuickViewButtons() {
     console.log('Adding Quick View buttons');
@@ -80,23 +80,30 @@
     console.log('Fetching product data for ID:', productId);
     const url = `https://api.zid.sa/v1/products/${productId}/`;
     
-    const headers = {
+    // Log the headers we're about to send
+    console.log('Request headers:', {
       'Store-Id': config.storeId,
       'Role': 'Manager',
       'Authorization': `Bearer ${config.authorization}`,
-      'Access-Token': config.accessToken,
-      'Content-Type': 'application/json'
-    };
+      'Access-Token': config.accessToken
+    });
 
     try {
       const response = await fetch(url, { 
         method: 'GET',
-        headers: headers
+        headers: {
+          'Store-Id': config.storeId,
+          'Role': 'Manager',
+          'Authorization': `Bearer ${config.authorization}`,
+          'Access-Token': config.accessToken,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
       });
 
       if (!response.ok) {
-        console.error('Failed to fetch product data. Status:', response.status);
         const responseText = await response.text();
+        console.error('Failed to fetch product data. Status:', response.status);
         console.error('Response text:', responseText);
         throw new Error(`Failed to fetch product data: ${response.statusText}`);
       }
