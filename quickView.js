@@ -1,13 +1,34 @@
-// src/scripts/quickView.js v1.3.5
+// src/scripts/quickView.js v1.3.6
 
 (function() {
   console.log('Quick View script initialized');
 
   const config = window.HMStudioQuickViewConfig || { 
     quickViewStyle: 'right',
-    storeId: ''
+    storeId: '',
+    firebaseConfig: null
   };
   console.log('Quick View config:', config);
+
+  function loadFirebase(callback) {
+    if (typeof firebase === 'undefined' && config.firebaseConfig) {
+      const script = document.createElement('script');
+      script.src = 'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js';
+      script.onload = function() {
+        const functionsScript = document.createElement('script');
+        functionsScript.src = 'https://www.gstatic.com/firebasejs/8.10.0/firebase-functions.js';
+        functionsScript.onload = function() {
+          firebase.initializeApp(config.firebaseConfig);
+          console.log('Firebase initialized');
+          callback();
+        };
+        document.head.appendChild(functionsScript);
+      };
+      document.head.appendChild(script);
+    } else {
+      callback();
+    }
+  }
 
   function addQuickViewButtons() {
     console.log('Adding Quick View buttons');
@@ -64,10 +85,16 @@
   async function fetchProductData(productId) {
     console.log('Fetching product data for ID:', productId);
     try {
-      const getProductDataFunction = firebase.functions().httpsCallable('getProductData');
-      const result = await getProductDataFunction({ productId, storeId: config.storeId });
-      console.log('Received product data:', result.data);
-      return result.data;
+      if (typeof firebase !== 'undefined' && firebase.functions) {
+        const getProductDataFunction = firebase.functions().httpsCallable('getProductData');
+        const result = await getProductDataFunction({ productId, storeId: config.storeId });
+        console.log('Received product data:', result.data);
+        return result.data;
+      } else {
+        console.warn('Firebase not available, falling back to direct API call');
+        // Implement a fallback method here if needed
+        throw new Error('Firebase is not available and no fallback method is implemented');
+      }
     } catch (error) {
       console.error('Error fetching product data:', error);
       throw error;
@@ -107,21 +134,24 @@
     // TODO: Implement actual add to cart functionality
   }
 
-  // Initial setup
-  console.log('Running initial setup');
-  addQuickViewButtons();
-
-  // Re-apply Quick View buttons when the page content changes (e.g., infinite scroll)
-  const observer = new MutationObserver(() => {
-    console.log('Page content changed, re-applying Quick View buttons');
+  function initQuickView() {
     addQuickViewButtons();
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-  console.log('MutationObserver set up');
 
-  // Expose necessary functions
-  window.HMStudioQuickView = {
-    openQuickView: openQuickView
-  };
-  console.log('HMStudioQuickView object exposed to window');
+    // Re-apply Quick View buttons when the page content changes (e.g., infinite scroll)
+    const observer = new MutationObserver(() => {
+      console.log('Page content changed, re-applying Quick View buttons');
+      addQuickViewButtons();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    console.log('MutationObserver set up');
+
+    // Expose necessary functions
+    window.HMStudioQuickView = {
+      openQuickView: openQuickView
+    };
+    console.log('HMStudioQuickView object exposed to window');
+  }
+
+  // Start the initialization process
+  loadFirebase(initQuickView);
 })();
