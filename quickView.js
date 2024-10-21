@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.4.3
+// src/scripts/quickView.js v1.4.4
 
 (function() {
   console.log('Quick View script initialized');
@@ -6,7 +6,9 @@
   function getStoreIdFromUrl() {
     const scriptTag = document.currentScript;
     const scriptUrl = new URL(scriptTag.src);
-    return scriptUrl.searchParams.get('storeId');
+    const storeId = scriptUrl.searchParams.get('storeId');
+    // Remove any additional parameters from storeId
+    return storeId ? storeId.split('?')[0] : null;
   }
 
   const storeId = getStoreIdFromUrl();
