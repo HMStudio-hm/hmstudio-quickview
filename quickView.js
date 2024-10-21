@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.3.2
+// src/scripts/quickView.js v1.3.3
 
 (function() {
   console.log('Quick View script initialized');
@@ -8,31 +8,39 @@
 
   function addQuickViewButtons() {
     console.log('Adding Quick View buttons');
-    const productCards = document.querySelectorAll('.product-item, .product-item position-relative'); // Adjust selector based on Zid's HTML structure
+    const productCards = document.querySelectorAll('.product-item.position-relative, .product-item, .product-item position-relative');
     console.log('Found product cards:', productCards.length);
+    
     productCards.forEach(card => {
       if (card.querySelector('.quick-view-btn')) {
         console.log('Quick View button already exists for a product, skipping');
         return;
       }
 
-      const button = document.createElement('button');
-      button.className = 'quick-view-btn';
-      button.textContent = 'Quick View';
-      button.addEventListener('click', (e) => {
-        e.preventDefault();
-        const productId = card.dataset.productId;
-        console.log('Quick View button clicked for product ID:', productId);
-        openQuickView(productId);
-      });
-
-      const addToCartBtn = card.querySelector('.add-to-cart-btn, .d-flex flex-column justify-content-start, .product-item a.product-card-add-to-cart, .product-item a.btn-product-card-out-of-stock, .product-item a.btn-product-card-select-variant, .product-item a.product-card-add-to-cart, a.product-card-add-to-cart'); // Adjust selector based on Zid's HTML structure
+      const addToCartBtn = card.querySelector('.product-card-add-to-cart, .add-to-cart-btn, .d-flex flex-column justify-content-start, .product-item a.product-card-add-to-cart, .product-item a.btn-product-card-out-of-stock, .product-item a.btn-product-card-select-variant, .product-item a.product-card-add-to-cart, a.product-card-add-to-cart');
       if (addToCartBtn) {
-        console.log('Inserting Quick View button');
-        if (config.quickViewStyle === 'left') {
-          addToCartBtn.parentNode.insertBefore(button, addToCartBtn);
+        const onClickAttr = addToCartBtn.getAttribute('onClick');
+        const match = onClickAttr.match(/'([^']+)'/);
+        if (match) {
+          const productId = match[1];
+
+          const button = document.createElement('button');
+          button.className = 'quick-view-btn';
+          button.textContent = 'Quick View';
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Quick View button clicked for product ID:', productId);
+            openQuickView(productId);
+          });
+
+          console.log('Inserting Quick View button');
+          if (config.quickViewStyle === 'left') {
+            addToCartBtn.parentNode.insertBefore(button, addToCartBtn);
+          } else {
+            addToCartBtn.parentNode.insertBefore(button, addToCartBtn.nextSibling);
+          }
         } else {
-          addToCartBtn.parentNode.insertBefore(button, addToCartBtn.nextSibling);
+          console.error('Could not extract product ID from Add to Cart button');
         }
       } else {
         console.error('Add to Cart button not found in product card');
