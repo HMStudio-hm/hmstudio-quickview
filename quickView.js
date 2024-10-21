@@ -1,14 +1,19 @@
-// src/scripts/quickView.js v1.3.3
+// src/scripts/quickView.js v1.3.4
 
 (function() {
   console.log('Quick View script initialized');
 
-  const config = window.HMStudioQuickViewConfig || { quickViewStyle: 'right' };
+  const config = window.HMStudioQuickViewConfig || { 
+    quickViewStyle: 'right',
+    storeId: '',
+    authorization: '',
+    accessToken: ''
+  };
   console.log('Quick View config:', config);
 
   function addQuickViewButtons() {
     console.log('Adding Quick View buttons');
-    const productCards = document.querySelectorAll('.product-item.position-relative, .product-item, .product-item position-relative');
+    const productCards = document.querySelectorAll('.product-item.position-relative');
     console.log('Found product cards:', productCards.length);
     
     productCards.forEach(card => {
@@ -17,7 +22,7 @@
         return;
       }
 
-      const addToCartBtn = card.querySelector('.product-card-add-to-cart, .add-to-cart-btn, .d-flex flex-column justify-content-start, .product-item a.product-card-add-to-cart, .product-item a.btn-product-card-out-of-stock, .product-item a.btn-product-card-select-variant, .product-item a.product-card-add-to-cart, a.product-card-add-to-cart');
+      const addToCartBtn = card.querySelector('.product-card-add-to-cart');
       if (addToCartBtn) {
         const onClickAttr = addToCartBtn.getAttribute('onClick');
         const match = onClickAttr.match(/'([^']+)'/);
@@ -60,14 +65,30 @@
 
   async function fetchProductData(productId) {
     console.log('Fetching product data for ID:', productId);
-    const response = await fetch(`https://api.zid.sa/v1/products/${productId}`);
-    if (!response.ok) {
-      console.error('Failed to fetch product data. Status:', response.status);
-      throw new Error('Failed to fetch product data');
+    const url = `https://api.zid.sa/v1/products/${productId}/`;
+    
+    const headers = {
+      'Store-Id': config.storeId,
+      'Authorization': `Bearer ${config.authorization}`,
+      'Access-Token': config.accessToken,
+      'Role': 'Manager',
+      'Accept-Language': 'en',
+      'Content-Type': 'application/json'
+    };
+
+    try {
+      const response = await fetch(url, { headers });
+      if (!response.ok) {
+        console.error('Failed to fetch product data. Status:', response.status);
+        throw new Error('Failed to fetch product data');
+      }
+      const data = await response.json();
+      console.log('Received product data:', data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching product data:', error);
+      throw error;
     }
-    const data = await response.json();
-    console.log('Received product data:', data);
-    return data;
   }
 
   function displayQuickViewModal(productData) {
@@ -76,9 +97,9 @@
     modal.className = 'quick-view-modal';
     modal.innerHTML = `
       <div class="quick-view-content">
-        <h2>${productData.name}</h2>
-        <img src="${productData.image}" alt="${productData.name}">
-        <p>${productData.description}</p>
+        <h2>${productData.name.en}</h2>
+        <img src="${productData.image}" alt="${productData.name.en}">
+        <p>${productData.description.en}</p>
         <p>Price: ${productData.price}</p>
         <button class="add-to-cart-btn">Add to Cart</button>
         <button class="close-modal-btn">Close</button>
