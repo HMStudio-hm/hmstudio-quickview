@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.3.4 jdida
+// src/scripts/quickView.js v1.3.8
 
 (function() {
   console.log('Quick View script initialized');
