@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.4.0
+// src/scripts/quickView.js v1.4.1
 
 (function() {
   console.log('Quick View script initialized');
@@ -10,6 +10,11 @@
     accessToken: ''
   };
   console.log('Quick View config:', config);
+
+  if (!config.storeId) {
+    console.error('Store ID is missing in the configuration');
+    return;
+  }
 
   function addQuickViewButtons() {
     console.log('Adding Quick View buttons');
@@ -68,7 +73,7 @@
     const url = `https://api.zid.sa/v1/products/${productId}/`;
     
     const headers = {
-      'Store-Id': '646181', // Hardcoded store ID
+      'Store-Id': config.storeId,
       'Role': 'Manager',
       'Authorization': `Bearer ${config.authorization}`,
       'Access-Token': config.accessToken,
