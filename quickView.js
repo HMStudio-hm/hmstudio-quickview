@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.3.9
+// src/scripts/quickView.js v1.4.0
 
 (function() {
   console.log('Quick View script initialized');
@@ -99,24 +99,56 @@
 
   function displayQuickViewModal(productData) {
     console.log('Displaying Quick View modal for product:', productData.name);
+    
+    // Remove any existing modal
+    const existingModal = document.querySelector('.quick-view-modal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
     const modal = document.createElement('div');
     modal.className = 'quick-view-modal';
-    modal.innerHTML = `
-      <div class="quick-view-content">
-        <h2>${productData.name.en || productData.name}</h2>
-        <img src="${productData.image}" alt="${productData.name.en || productData.name}">
-        <p>${productData.description.en || productData.description}</p>
-        <p>Price: ${productData.price}</p>
-        <button class="add-to-cart-btn">Add to Cart</button>
-        <button class="close-modal-btn">Close</button>
-      </div>
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
     `;
 
-    modal.querySelector('.add-to-cart-btn').addEventListener('click', () => {
+    const content = document.createElement('div');
+    content.className = 'quick-view-content';
+    content.style.cssText = `
+      background-color: white;
+      padding: 20px;
+      border-radius: 5px;
+      max-width: 80%;
+      max-height: 80%;
+      overflow-y: auto;
+    `;
+
+    content.innerHTML = `
+      <h2>${productData.name.en || productData.name}</h2>
+      <img src="${productData.image}" alt="${productData.name.en || productData.name}" style="max-width: 100%; height: auto;">
+      <p>${productData.description.en || productData.description}</p>
+      <p>Price: ${productData.price}</p>
+      <button class="add-to-cart-btn">Add to Cart</button>
+      <button class="close-modal-btn">Close</button>
+    `;
+
+    modal.appendChild(content);
+
+    content.querySelector('.add-to-cart-btn').addEventListener('click', () => {
       console.log('Add to Cart clicked in Quick View modal');
       addToCart(productData.id);
     });
-    modal.querySelector('.close-modal-btn').addEventListener('click', () => {
+
+    content.querySelector('.close-modal-btn').addEventListener('click', () => {
       console.log('Closing Quick View modal');
       modal.remove();
     });
