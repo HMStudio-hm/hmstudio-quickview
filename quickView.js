@@ -1,24 +1,10 @@
-// src/scripts/quickView.js v1.4.6
+// src/scripts/quickView.js v1.4.7
 
 (function() {
   console.log('Quick View script initialized');
 
-  function getStoreIdFromUrl() {
-    const scriptTag = document.currentScript;
-    const scriptUrl = new URL(scriptTag.src);
-    const storeId = scriptUrl.searchParams.get('storeId');
-    return storeId ? storeId.split('?')[0] : null;
-  }
-
-  const storeId = getStoreIdFromUrl();
-  if (!storeId) {
-    console.error('Store ID not found in script URL');
-    return;
-  }
-
-  const config = {
-    ...window.HMStudioQuickViewConfig,
-    storeId: storeId
+  const config = window.HMStudioQuickViewConfig || { 
+    quickViewStyle: 'right'
   };
 
   console.log('Quick View config:', config);
@@ -85,7 +71,7 @@
 
   async function fetchProductData(productId) {
     console.log('Fetching product data for ID:', productId);
-    // Replace with your actual Firebase project ID
+    // Use your actual Cloud Function URL here
     const url = `https://europe-west3-hmstudio-85f42.cloudfunctions.net/getProductData?storeId=${config.storeId}&productId=${productId}`;
     
     try {
