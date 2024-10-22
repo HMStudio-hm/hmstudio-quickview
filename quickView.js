@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.5.1
+// src/scripts/quickView.js v1.5.2
 
 (function() {
   console.log('Quick View script initialized');
@@ -33,7 +33,7 @@
         throw new Error(`Failed to fetch product data: ${response.statusText}`);
       }
       const data = await response.json();
-      console.log('Received product data:', data);
+      console.log('Received product data:', JSON.stringify(data, null, 2));
       return data;
     } catch (error) {
       console.error('Error fetching product data:', error);
@@ -71,6 +71,48 @@
     `;
     mainImageContainer.appendChild(mainImage);
 
+    // Navigation buttons
+    const createNavButton = (text, onClick) => {
+      const button = document.createElement('button');
+      button.textContent = text;
+      button.style.cssText = `
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255, 255, 255, 0.7);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+      button.addEventListener('click', onClick);
+      return button;
+    };
+
+    let currentImageIndex = 0;
+
+    const prevButton = createNavButton('←', () => {
+      currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
+      mainImage.src = images[currentImageIndex].url;
+      updateThumbnails();
+    });
+    prevButton.style.left = '10px';
+
+    const nextButton = createNavButton('→', () => {
+      currentImageIndex = (currentImageIndex + 1) % images.length;
+      mainImage.src = images[currentImageIndex].url;
+      updateThumbnails();
+    });
+    nextButton.style.right = '10px';
+
+    mainImageContainer.appendChild(prevButton);
+    mainImageContainer.appendChild(nextButton);
+
     // Thumbnails container
     const thumbnailsContainer = document.createElement('div');
     thumbnailsContainer.style.cssText = `
@@ -79,6 +121,12 @@
       overflow-x: auto;
       padding: 5px 0;
     `;
+
+    const updateThumbnails = () => {
+      thumbnailsContainer.querySelectorAll('img').forEach((thumb, index) => {
+        thumb.style.border = index === currentImageIndex ? '2px solid #4CAF50' : '2px solid transparent';
+      });
+    };
 
     images.forEach((image, index) => {
       const thumbnail = document.createElement('img');
@@ -95,11 +143,8 @@
 
       thumbnail.addEventListener('click', () => {
         mainImage.src = image.url;
-        // Update thumbnail borders
-        thumbnailsContainer.querySelectorAll('img').forEach(thumb => {
-          thumb.style.border = '2px solid transparent';
-        });
-        thumbnail.style.border = '2px solid #4CAF50';
+        currentImageIndex = index;
+        updateThumbnails();
       });
 
       thumbnailsContainer.appendChild(thumbnail);
@@ -401,6 +446,7 @@
   console.log('MutationObserver set up');
 
   // Expose necessary functions
+  
   window.HMStudioQuickView = {
     openQuickView: openQuickView
   };
