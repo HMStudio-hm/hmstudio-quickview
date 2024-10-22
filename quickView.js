@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.4.9
+// src/scripts/quickView.js v1.5.0
 
 (function() {
   console.log('Quick View script initialized');
@@ -22,61 +22,6 @@
   };
 
   console.log('Quick View config:', config);
-
-  function addQuickViewButtons() {
-    console.log('Adding Quick View buttons');
-    const productCards = document.querySelectorAll('.product-item.position-relative');
-    console.log('Found product cards:', productCards.length);
-    
-    productCards.forEach(card => {
-      if (card.querySelector('.quick-view-btn')) {
-        console.log('Quick View button already exists for a product, skipping');
-        return;
-      }
-
-      const addToCartBtn = card.querySelector('.product-card-add-to-cart');
-      if (addToCartBtn) {
-        const onClickAttr = addToCartBtn.getAttribute('onClick');
-        const match = onClickAttr.match(/'([^']+)'/);
-        if (match) {
-          const productId = match[1];
-
-          const button = document.createElement('button');
-          button.className = 'quick-view-btn';
-          button.textContent = 'Quick View';
-          button.style.cssText = `
-            padding: 8px 16px;
-            margin: 0 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #ffffff;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-          `;
-
-          button.addEventListener('mouseover', () => {
-            button.style.backgroundColor = '#f0f0f0';
-          });
-
-          button.addEventListener('mouseout', () => {
-            button.style.backgroundColor = '#ffffff';
-          });
-
-          button.addEventListener('click', (e) => {
-            e.preventDefault();
-            console.log('Quick View button clicked for product ID:', productId);
-            openQuickView(productId);
-          });
-
-          if (config.quickViewStyle === 'left') {
-            addToCartBtn.parentNode.insertBefore(button, addToCartBtn);
-          } else {
-            addToCartBtn.parentNode.insertBefore(button, addToCartBtn.nextSibling);
-          }
-        }
-      }
-    });
-  }
 
   async function fetchProductData(productId) {
     console.log('Fetching product data for ID:', productId);
@@ -372,9 +317,74 @@
     console.log('Quick View modal added to DOM');
   }
 
+  async function openQuickView(productId) {
+    console.log('Opening Quick View for product ID:', productId);
+    try {
+      const productData = await fetchProductData(productId);
+      displayQuickViewModal(productData);
+    } catch (error) {
+      console.error('Failed to open quick view:', error);
+    }
+  }
+
   function addToCart(productId) {
     console.log('Adding product to cart:', productId);
     // TODO: Implement actual add to cart functionality
+  }
+
+  function addQuickViewButtons() {
+    console.log('Adding Quick View buttons');
+    const productCards = document.querySelectorAll('.product-item.position-relative');
+    console.log('Found product cards:', productCards.length);
+    
+    productCards.forEach(card => {
+      if (card.querySelector('.quick-view-btn')) {
+        console.log('Quick View button already exists for a product, skipping');
+        return;
+      }
+
+      const addToCartBtn = card.querySelector('.product-card-add-to-cart');
+      if (addToCartBtn) {
+        const onClickAttr = addToCartBtn.getAttribute('onClick');
+        const match = onClickAttr.match(/'([^']+)'/);
+        if (match) {
+          const productId = match[1];
+
+          const button = document.createElement('button');
+          button.className = 'quick-view-btn';
+          button.textContent = 'Quick View';
+          button.style.cssText = `
+            padding: 8px 16px;
+            margin: 0 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #ffffff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+          `;
+
+          button.addEventListener('mouseover', () => {
+            button.style.backgroundColor = '#f0f0f0';
+          });
+
+          button.addEventListener('mouseout', () => {
+            button.style.backgroundColor = '#ffffff';
+          });
+
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Quick View button clicked for product ID:', productId);
+            openQuickView(productId);
+          });
+
+          if (config.quickViewStyle === 'left') {
+            addToCartBtn.parentNode.insertBefore(button, addToCartBtn);
+          } else {
+            addToCartBtn.parentNode.insertBefore(button, addToCartBtn.nextSibling);
+          }
+        }
+      }
+    });
   }
 
   // Initial setup
