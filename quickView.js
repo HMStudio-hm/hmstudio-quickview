@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.5.0
+// src/scripts/quickView.js v1.5.1
 
 (function() {
   console.log('Quick View script initialized');
@@ -158,6 +158,7 @@
 
   function displayQuickViewModal(productData) {
     console.log('Displaying Quick View modal for product:', productData);
+    console.log('Full Product Data:', JSON.stringify(productData, null, 2));
     
     const existingModal = document.querySelector('.quick-view-modal');
     if (existingModal) {
