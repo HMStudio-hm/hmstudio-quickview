@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.5.8
+// src/scripts/quickView.js v1.5.9
 
 (function() {
   console.log('Quick View script initialized');
@@ -567,54 +567,79 @@
     console.log('Found product cards:', productCards.length);
     
     productCards.forEach(card => {
-      if (card.querySelector('.quick-view-btn')) {
-        console.log('Quick View button already exists for a product, skipping');
-        return;
-      }
-
-      const addToCartBtn = card.querySelector('.product-card-add-to-cart');
-      if (addToCartBtn) {
-        const onClickAttr = addToCartBtn.getAttribute('onClick');
-        const match = onClickAttr.match(/'([^']+)'/);
-        if (match) {
-          const productId = match[1];
-
-          const button = document.createElement('button');
-          button.className = 'quick-view-btn';
-          button.textContent = 'Quick View';
-          button.style.cssText = `
-            padding: 8px 16px;
-            margin: 0 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #ffffff;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-          `;
-
-          button.addEventListener('mouseover', () => {
-            button.style.backgroundColor = '#f0f0f0';
-          });
-
-          button.addEventListener('mouseout', () => {
-            button.style.backgroundColor = '#ffffff';
-          });
-
-          button.addEventListener('click', (e) => {
-            e.preventDefault();
-            console.log('Quick View button clicked for product ID:', productId);
-            openQuickView(productId);
-          });
-
-          if (config.quickViewStyle === 'left') {
-            addToCartBtn.parentNode.insertBefore(button, addToCartBtn);
-          } else {
-            addToCartBtn.parentNode.insertBefore(button, addToCartBtn.nextSibling);
-          }
+        if (card.querySelector('.quick-view-btn')) {
+            console.log('Quick View button already exists for a product, skipping');
+            return;
         }
-      }
+
+        // Try to find either regular add to cart button or variant selection button
+        const actionBtn = card.querySelector('.product-card-add-to-cart, .btn-product-card-select-variant');
+        if (actionBtn) {
+            let productId;
+            
+            // Extract product ID from onClick attribute or data attribute
+            if (actionBtn.getAttribute('onClick')) {
+                const match = actionBtn.getAttribute('onClick').match(/'([^']+)'/);
+                if (match) {
+                    productId = match[1];
+                }
+            } else if (actionBtn.closest('[data-wishlist-id]')) {
+                productId = actionBtn.closest('[data-wishlist-id]').getAttribute('data-wishlist-id');
+            }
+
+            if (productId) {
+                const button = document.createElement('button');
+                button.className = 'quick-view-btn';
+                button.style.cssText = `
+                    width: 35px;
+                    height: 35px;
+                    padding: 0;
+                    margin: 0 5px;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    background-color: #ffffff;
+                    cursor: pointer;
+                    transition: background-color 0.3s ease;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                `;
+
+                // Add eye icon using SVG
+                button.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                `;
+
+                button.addEventListener('mouseover', () => {
+                    button.style.backgroundColor = '#f0f0f0';
+                });
+
+                button.addEventListener('mouseout', () => {
+                    button.style.backgroundColor = '#ffffff';
+                });
+
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('Quick View button clicked for product ID:', productId);
+                    openQuickView(productId);
+                });
+
+                // Find the container to insert the button
+                const buttonContainer = actionBtn.parentNode;
+                if (buttonContainer) {
+                    if (config.quickViewStyle === 'left') {
+                        buttonContainer.insertBefore(button, actionBtn);
+                    } else {
+                        buttonContainer.insertBefore(button, actionBtn.nextSibling);
+                    }
+                }
+            }
+        }
     });
-  }
+}
 
   // Initial setup
   console.log('Running initial setup');
