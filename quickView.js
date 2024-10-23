@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.5.5
+// src/scripts/quickView.js v1.5.6
 
 (function() {
   console.log('Quick View script initialized');
@@ -63,7 +63,6 @@
     `;
 
     const mainImage = document.createElement('img');
-    // Use a placeholder image if no images are available
     if (images && images.length > 0) {
         mainImage.src = images[0].url;
         mainImage.alt = images[0].alt_text || 'Product Image';
@@ -165,64 +164,90 @@
     return attributesContainer;
   }
 
-  function handleAddToCart(productId) {
-    console.log('Adding product to cart:', productId);
+  function handleAddToCart(productData) {
+    console.log('Adding product to cart:', productData);
     
     // Remove loading class if exists
     document.querySelectorAll('.add-to-cart-progress').forEach(el => {
-      el.classList.remove('d-none');
+        el.classList.remove('d-none');
     });
 
-    // Create a hidden form if it doesn't exist
+    // Create a hidden form with the necessary fields
     let productForm = document.getElementById('product-form');
-    if (!productForm) {
-      productForm = document.createElement('form');
-      productForm.id = 'product-form';
-      productForm.style.display = 'none';
-      document.body.appendChild(productForm);
+    if (productForm) {
+        productForm.remove(); // Remove existing form if any
     }
+
+    productForm = document.createElement('form');
+    productForm.id = 'product-form';
+    productForm.style.display = 'none';
+
+    // Add necessary hidden fields
+    const productIdInput = document.createElement('input');
+    productIdInput.type = 'hidden';
+    productIdInput.name = 'product_id';
+    productIdInput.value = productData.id;
+    productForm.appendChild(productIdInput);
+
+    // Add quantity field
+    const quantityInput = document.createElement('input');
+    quantityInput.type = 'hidden';
+    quantityInput.name = 'quantity';
+    quantityInput.value = '1';  // Default quantity
+    productForm.appendChild(quantityInput);
+
+    // Add selected_product field
+    const selectedProductInput = document.createElement('input');
+    selectedProductInput.type = 'hidden';
+    selectedProductInput.name = 'selected_product';
+    selectedProductInput.value = JSON.stringify({
+        id: productData.id,
+        name: productData.name,
+        price: productData.price,
+        quantity: 1
+    });
+    productForm.appendChild(selectedProductInput);
+
+    document.body.appendChild(productForm);
 
     // Use Zid's cart library to add the product
     if (typeof zid !== 'undefined' && zid.store && zid.store.cart) {
-      zid.store.cart.addProduct({ formId: 'product-form' })
-        .then(function (response) {
-          if (response.status === 'success') {
-            console.log('Product added successfully:', response);
-            
-            // Update cart badge if the function exists
-            if (typeof setCartBadge === 'function') {
-              setCartBadge(response.data.cart.products_count);
-            }
+        zid.store.cart.addProduct({ formId: 'product-form' })
+            .then(function (response) {
+                if (response.status === 'success') {
+                    console.log('Product added successfully:', response);
+                    
+                    // Update cart badge if the function exists
+                    if (typeof setCartBadge === 'function') {
+                        setCartBadge(response.data.cart.products_count);
+                    }
 
-            // Close the Quick View modal
-            const modal = document.querySelector('.quick-view-modal');
-            if (modal) {
-              modal.remove();
-            }
-          } else {
-            console.error('Failed to add product:', response);
-            alert('Failed to add product to cart. Please try again.');
-          }
-
-          // Add loading class back
-          document.querySelectorAll('.add-to-cart-progress').forEach(el => {
-            el.classList.add('d-none');
-          });
-        })
-        .catch(function(error) {
-          console.error('Error adding product to cart:', error);
-          alert('Error adding product to cart. Please try again.');
-          
-          // Add loading class back
-          document.querySelectorAll('.add-to-cart-progress').forEach(el => {
-            el.classList.add('d-none');
-          });
-        });
+                    // Close the Quick View modal
+                    const modal = document.querySelector('.quick-view-modal');
+                    if (modal) {
+                        modal.remove();
+                    }
+                } else {
+                    console.error('Failed to add product:', response);
+                    alert('Failed to add product to cart. Please try again.');
+                }
+            })
+            .catch(function(error) {
+                console.error('Error adding product to cart:', error);
+                alert('Error adding product to cart. Please try again.');
+            })
+            .finally(function() {
+                // Add loading class back and cleanup
+                document.querySelectorAll('.add-to-cart-progress').forEach(el => {
+                    el.classList.add('d-none');
+                });
+                productForm.remove(); // Clean up the form
+            });
     } else {
-      console.error('Zid cart library not found');
-      alert('Unable to add product to cart. Please try again later.');
+        console.error('Zid cart library not found');
+        alert('Unable to add product to cart. Please try again later.');
     }
-  }
+}
 
   function displayQuickViewModal(productData) {
     console.log('Displaying Quick View modal for product:', productData);
@@ -363,7 +388,7 @@
     document.head.appendChild(styleSheet);
 
     addToCartBtn.addEventListener('click', () => {
-      handleAddToCart(productData.id);
+      handleAddToCart(productData);  // Pass the entire productData
     });
 
     // Close button
