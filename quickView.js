@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.5.7
+// src/scripts/quickView.js v1.5.8
 
 (function() {
   console.log('Quick View script initialized');
@@ -165,9 +165,122 @@
     return attributesContainer;
   }
 
-  function handleAddToCart(productData) {
-    console.log('Adding product to cart:', productData);
+  
 
+  function createVariantsSection(productData) {
+    const variantsContainer = document.createElement('div');
+    variantsContainer.className = 'quick-view-variants';
+    variantsContainer.style.cssText = `
+      margin-top: 15px;
+      padding: 10px 0;
+    `;
+
+    if (productData.variants && productData.variants.length > 0) {
+      // Create dropdown for each variant type
+      const variantTypes = {};
+      productData.variants.forEach(variant => {
+        Object.keys(variant.attributes || {}).forEach(key => {
+          if (!variantTypes[key]) {
+            variantTypes[key] = new Set();
+          }
+          variantTypes[key].add(variant.attributes[key]);
+        });
+      });
+
+      Object.entries(variantTypes).forEach(([type, values]) => {
+        const select = document.createElement('select');
+        select.className = 'variant-select';
+        select.style.cssText = `
+          margin: 5px 0;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          width: 100%;
+        `;
+
+        const label = document.createElement('label');
+        label.textContent = type;
+        label.style.cssText = `
+          display: block;
+          margin-bottom: 5px;
+          font-weight: bold;
+        `;
+
+        select.innerHTML = `
+          <option value="">Select ${type}</option>
+          ${Array.from(values).map(value => `
+            <option value="${value}">${value}</option>
+          `).join('')}
+        `;
+
+        select.addEventListener('change', () => updateSelectedVariant(productData));
+        
+        variantsContainer.appendChild(label);
+        variantsContainer.appendChild(select);
+      });
+    }
+
+    return variantsContainer;
+  }
+
+  function updateSelectedVariant(productData) {
+    const form = document.getElementById('product-form');
+    if (!form) return;
+
+    const selectedValues = {};
+    form.querySelectorAll('.variant-select').forEach(select => {
+      selectedValues[select.previousElementSibling.textContent] = select.value;
+    });
+
+    // Find matching variant
+    const selectedVariant = productData.variants.find(variant => {
+      return Object.entries(selectedValues).every(([key, value]) => 
+        variant.attributes[key] === value
+      );
+    });
+
+    if (selectedVariant) {
+      // Update product ID
+      const productIdInput = form.querySelector('#product-id');
+      if (productIdInput) {
+        productIdInput.value = selectedVariant.id;
+      }
+
+      // Update price display
+      const priceElement = form.querySelector('#product-price');
+      const oldPriceElement = form.querySelector('#product-old-price');
+      if (priceElement) {
+        if (selectedVariant.formatted_sale_price) {
+          priceElement.textContent = selectedVariant.formatted_sale_price;
+          if (oldPriceElement) {
+            oldPriceElement.textContent = selectedVariant.formatted_price;
+            oldPriceElement.style.display = 'block';
+          }
+        } else {
+          priceElement.textContent = selectedVariant.formatted_price;
+          if (oldPriceElement) {
+            oldPriceElement.style.display = 'none';
+          }
+        }
+      }
+
+      // Update add to cart button
+      const addToCartBtn = form.querySelector('.add-to-cart-btn');
+      if (addToCartBtn) {
+        if (!selectedVariant.unavailable) {
+          addToCartBtn.disabled = false;
+          addToCartBtn.classList.remove('disabled');
+          addToCartBtn.style.opacity = '1';
+        } else {
+          addToCartBtn.disabled = true;
+          addToCartBtn.classList.add('disabled');
+          addToCartBtn.style.opacity = '0.5';
+        }
+      }
+    }
+  }
+
+  function handleAddToCart(productData) {
     // Create or get the form
     let productForm = document.getElementById('product-form');
     if (!productForm) {
@@ -183,7 +296,7 @@
     const productIdInput = document.createElement('input');
     productIdInput.id = 'product-id';
     productIdInput.type = 'hidden';
-    productIdInput.value = productData.id;
+    productIdInput.value = productData.selected_product ? productData.selected_product.id : productData.id;
     productForm.appendChild(productIdInput);
 
     const quantityInput = document.createElement('input');
@@ -218,6 +331,7 @@
         })
         .catch(function(error) {
             console.error('Error adding to cart:', error);
+            alert('Failed to add product to cart. Please try again.');
             document.querySelectorAll('.add-to-cart-progress').forEach(el => {
                 el.classList.add('d-none');
             });
@@ -261,6 +375,11 @@
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     `;
 
+    // Create form
+    const form = document.createElement('form');
+    form.id = 'product-form';
+    content.appendChild(form);
+
     // Create and append the title
     const title = document.createElement('h2');
     title.textContent = productData.name.en || productData.name;
@@ -269,12 +388,12 @@
       font-size: 1.5em;
       color: #333;
     `;
-    content.appendChild(title);
+    form.appendChild(title);
 
     // Create and append the image gallery
     if (productData.images && productData.images.length > 0) {
       const gallery = createImageGallery(productData.images);
-      content.appendChild(gallery);
+      form.appendChild(gallery);
     }
 
     // Create product details section
@@ -283,16 +402,33 @@
       margin-top: 20px;
     `;
 
-    // Add price
-    const price = document.createElement('p');
-    price.style.cssText = `
+    // Add price display elements
+    const priceContainer = document.createElement('div');
+    const currentPrice = document.createElement('span');
+    currentPrice.id = 'product-price';
+    currentPrice.style.cssText = `
       font-size: 1.3em;
       font-weight: bold;
       color: #4CAF50;
-      margin: 10px 0;
+      margin-right: 10px;
     `;
-    price.textContent = `Price: ${productData.formatted_price || productData.price}`;
-    details.appendChild(price);
+    const oldPrice = document.createElement('span');
+    oldPrice.id = 'product-old-price';
+    oldPrice.style.cssText = `
+      text-decoration: line-through;
+      color: #999;
+      display: none;
+    `;
+
+    priceContainer.appendChild(currentPrice);
+    priceContainer.appendChild(oldPrice);
+    details.appendChild(priceContainer);
+
+    // Add variants section if product has variants
+    if (productData.variants && productData.variants.length > 0) {
+      const variantsSection = createVariantsSection(productData);
+      details.appendChild(variantsSection);
+    }
 
     // Add description
     if (productData.description) {
@@ -306,11 +442,24 @@
       details.appendChild(description);
     }
 
-    content.appendChild(details);
+    form.appendChild(details);
 
     // Add attributes section
     const attributes = createAttributesSection(productData.attributes);
-    content.appendChild(attributes);
+    form.appendChild(attributes);
+
+    // Add hidden inputs
+    const productIdInput = document.createElement('input');
+    productIdInput.type = 'hidden';
+    productIdInput.id = 'product-id';
+    productIdInput.value = productData.selected_product ? productData.selected_product.id : productData.id;
+    form.appendChild(productIdInput);
+
+    const quantityInput = document.createElement('input');
+    quantityInput.type = 'hidden';
+    quantityInput.id = 'product-quantity';
+    quantityInput.value = '1';
+    form.appendChild(quantityInput);
 
     // Add buttons container
     const buttonsContainer = document.createElement('div');
@@ -326,17 +475,17 @@
     // Add to Cart button
     const addToCartBtn = document.createElement('button');
     addToCartBtn.textContent = 'Add to Cart';
-    addToCartBtn.className = 'btn btn-primary';
+    addToCartBtn.className = 'btn btn-primary add-to-cart-btn';
     addToCartBtn.type = 'button';
     addToCartBtn.style.cssText = `
-        padding: 10px 20px;
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-        transition: background-color 0.3s ease;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
     `;
 
     // Add loading spinner
@@ -345,28 +494,17 @@
     loadingSpinner.src = '/path/to/spinner.gif'; // Update with actual spinner image path
     loadingSpinner.width = 30;
     loadingSpinner.height = 30;
+    loadingSpinner.style.marginLeft = '10px';
     addToCartBtn.appendChild(loadingSpinner);
 
     addToCartBtn.addEventListener('click', () => {
-        handleAddToCart(productData);
-    });
-
-    // Add styles for loading spinner animation
-    const styleSheet = document.createElement('style');
-    styleSheet.textContent = `
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-    `;
-    document.head.appendChild(styleSheet);
-
-    addToCartBtn.addEventListener('click', () => {
-      handleAddToCart(productData.id);
+      handleAddToCart(productData);
     });
 
     // Close button
     const closeBtn = document.createElement('button');
     closeBtn.textContent = 'Close';
+    closeBtn.type = 'button';
     closeBtn.style.cssText = `
       padding: 10px 20px;
       background-color: #f44336;
@@ -390,7 +528,7 @@
 
     buttonsContainer.appendChild(addToCartBtn);
     buttonsContainer.appendChild(closeBtn);
-    content.appendChild(buttonsContainer);
+    form.appendChild(buttonsContainer);
 
     modal.appendChild(content);
 
@@ -402,6 +540,14 @@
     });
 
     document.body.appendChild(modal);
+    
+    // Initialize price display
+    if (productData.selected_product) {
+      updateSelectedVariant(productData);
+    } else {
+      currentPrice.textContent = productData.formatted_price || productData.price;
+    }
+
     console.log('Quick View modal added to DOM');
   }
 
