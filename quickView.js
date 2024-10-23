@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.5.9
+// src/scripts/quickView.js v1.6.0
 
 (function() {
   console.log('Quick View script initialized');
@@ -572,22 +572,16 @@
             return;
         }
 
-        // Try to find either regular add to cart button or variant selection button
-        const actionBtn = card.querySelector('.product-card-add-to-cart, .btn-product-card-select-variant');
-        if (actionBtn) {
-            let productId;
+        // Get product ID from data-wishlist-id
+        const productId = card.querySelector('[data-wishlist-id]')?.getAttribute('data-wishlist-id');
+        
+        if (productId) {
+            console.log('Found product ID:', productId);
             
-            // Extract product ID from onClick attribute or data attribute
-            if (actionBtn.getAttribute('onClick')) {
-                const match = actionBtn.getAttribute('onClick').match(/'([^']+)'/);
-                if (match) {
-                    productId = match[1];
-                }
-            } else if (actionBtn.closest('[data-wishlist-id]')) {
-                productId = actionBtn.closest('[data-wishlist-id]').getAttribute('data-wishlist-id');
-            }
-
-            if (productId) {
+            // Find the button container - it's the div with text-align: center
+            const buttonContainer = card.querySelector('div[style*="text-align: center"]');
+            
+            if (buttonContainer) {
                 const button = document.createElement('button');
                 button.className = 'quick-view-btn';
                 button.style.cssText = `
@@ -627,14 +621,16 @@
                     openQuickView(productId);
                 });
 
-                // Find the container to insert the button
-                const buttonContainer = actionBtn.parentNode;
-                if (buttonContainer) {
+                // Insert before the first button in the container
+                const firstButton = buttonContainer.querySelector('a, button');
+                if (firstButton) {
                     if (config.quickViewStyle === 'left') {
-                        buttonContainer.insertBefore(button, actionBtn);
+                        buttonContainer.insertBefore(button, firstButton);
                     } else {
-                        buttonContainer.insertBefore(button, actionBtn.nextSibling);
+                        buttonContainer.insertBefore(button, firstButton.nextSibling);
                     }
+                } else {
+                    buttonContainer.appendChild(button);
                 }
             }
         }
