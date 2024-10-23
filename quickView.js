@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.5.6
+// src/scripts/quickView.js v1.5.7
 
 (function() {
   console.log('Quick View script initialized');
@@ -63,6 +63,7 @@
     `;
 
     const mainImage = document.createElement('img');
+    // Use a placeholder image if no images are available
     if (images && images.length > 0) {
         mainImage.src = images[0].url;
         mainImage.alt = images[0].alt_text || 'Product Image';
@@ -166,87 +167,61 @@
 
   function handleAddToCart(productData) {
     console.log('Adding product to cart:', productData);
-    
-    // Remove loading class if exists
+
+    // Create or get the form
+    let productForm = document.getElementById('product-form');
+    if (!productForm) {
+        productForm = document.createElement('form');
+        productForm.id = 'product-form';
+        document.body.appendChild(productForm);
+    }
+
+    // Clear any existing inputs
+    productForm.innerHTML = '';
+
+    // Add required hidden inputs
+    const productIdInput = document.createElement('input');
+    productIdInput.id = 'product-id';
+    productIdInput.type = 'hidden';
+    productIdInput.value = productData.id;
+    productForm.appendChild(productIdInput);
+
+    const quantityInput = document.createElement('input');
+    quantityInput.id = 'product-quantity';
+    quantityInput.type = 'hidden';
+    quantityInput.value = '1';
+    productForm.appendChild(quantityInput);
+
+    // Show loading spinner
     document.querySelectorAll('.add-to-cart-progress').forEach(el => {
         el.classList.remove('d-none');
     });
 
-    // Create a hidden form with the necessary fields
-    let productForm = document.getElementById('product-form');
-    if (productForm) {
-        productForm.remove(); // Remove existing form if any
-    }
-
-    productForm = document.createElement('form');
-    productForm.id = 'product-form';
-    productForm.style.display = 'none';
-
-    // Add necessary hidden fields
-    const productIdInput = document.createElement('input');
-    productIdInput.type = 'hidden';
-    productIdInput.name = 'product_id';
-    productIdInput.value = productData.id;
-    productForm.appendChild(productIdInput);
-
-    // Add quantity field
-    const quantityInput = document.createElement('input');
-    quantityInput.type = 'hidden';
-    quantityInput.name = 'quantity';
-    quantityInput.value = '1';  // Default quantity
-    productForm.appendChild(quantityInput);
-
-    // Add selected_product field
-    const selectedProductInput = document.createElement('input');
-    selectedProductInput.type = 'hidden';
-    selectedProductInput.name = 'selected_product';
-    selectedProductInput.value = JSON.stringify({
-        id: productData.id,
-        name: productData.name,
-        price: productData.price,
-        quantity: 1
-    });
-    productForm.appendChild(selectedProductInput);
-
-    document.body.appendChild(productForm);
-
-    // Use Zid's cart library to add the product
-    if (typeof zid !== 'undefined' && zid.store && zid.store.cart) {
-        zid.store.cart.addProduct({ formId: 'product-form' })
-            .then(function (response) {
-                if (response.status === 'success') {
-                    console.log('Product added successfully:', response);
-                    
-                    // Update cart badge if the function exists
-                    if (typeof setCartBadge === 'function') {
-                        setCartBadge(response.data.cart.products_count);
-                    }
-
-                    // Close the Quick View modal
-                    const modal = document.querySelector('.quick-view-modal');
-                    if (modal) {
-                        modal.remove();
-                    }
-                } else {
-                    console.error('Failed to add product:', response);
-                    alert('Failed to add product to cart. Please try again.');
+    // Call Zid's cart function
+    zid.store.cart.addProduct({ formId: 'product-form' })
+        .then(function (response) {
+            if (response.status === 'success') {
+                alert('Product added to cart successfully');
+                if (typeof setCartBadge === 'function') {
+                    setCartBadge(response.data.cart.products_count);
                 }
-            })
-            .catch(function(error) {
-                console.error('Error adding product to cart:', error);
-                alert('Error adding product to cart. Please try again.');
-            })
-            .finally(function() {
-                // Add loading class back and cleanup
-                document.querySelectorAll('.add-to-cart-progress').forEach(el => {
-                    el.classList.add('d-none');
-                });
-                productForm.remove(); // Clean up the form
+                // Close modal
+                const modal = document.querySelector('.quick-view-modal');
+                if (modal) {
+                    modal.remove();
+                }
+            }
+            // Hide loading spinner
+            document.querySelectorAll('.add-to-cart-progress').forEach(el => {
+                el.classList.add('d-none');
             });
-    } else {
-        console.error('Zid cart library not found');
-        alert('Unable to add product to cart. Please try again later.');
-    }
+        })
+        .catch(function(error) {
+            console.error('Error adding to cart:', error);
+            document.querySelectorAll('.add-to-cart-progress').forEach(el => {
+                el.classList.add('d-none');
+            });
+        });
 }
 
   function displayQuickViewModal(productData) {
@@ -352,31 +327,29 @@
     const addToCartBtn = document.createElement('button');
     addToCartBtn.textContent = 'Add to Cart';
     addToCartBtn.className = 'btn btn-primary';
+    addToCartBtn.type = 'button';
     addToCartBtn.style.cssText = `
-      padding: 10px 20px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background-color 0.3s ease;
+        padding: 10px 20px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
     `;
 
-    // Add loading indicator
-    const loadingSpinner = document.createElement('span');
+    // Add loading spinner
+    const loadingSpinner = document.createElement('img');
     loadingSpinner.className = 'add-to-cart-progress d-none';
-    loadingSpinner.style.cssText = `
-      display: inline-block;
-      margin-left: 5px;
-      width: 16px;
-      height: 16px;
-      border: 2px solid #fff;
-      border-radius: 50%;
-      border-top-color: transparent;
-      animation: spin 1s linear infinite;
-    `;
+    loadingSpinner.src = '/path/to/spinner.gif'; // Update with actual spinner image path
+    loadingSpinner.width = 30;
+    loadingSpinner.height = 30;
     addToCartBtn.appendChild(loadingSpinner);
+
+    addToCartBtn.addEventListener('click', () => {
+        handleAddToCart(productData);
+    });
 
     // Add styles for loading spinner animation
     const styleSheet = document.createElement('style');
@@ -388,7 +361,7 @@
     document.head.appendChild(styleSheet);
 
     addToCartBtn.addEventListener('click', () => {
-      handleAddToCart(productData);  // Pass the entire productData
+      handleAddToCart(productData.id);
     });
 
     // Close button
