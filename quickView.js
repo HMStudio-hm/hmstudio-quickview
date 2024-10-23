@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.5.3
+// src/scripts/quickView.js v1.5.4
 
 (function() {
   console.log('Quick View script initialized');
@@ -291,7 +291,8 @@
     // Add to Cart button
     const addToCartBtn = document.createElement('button');
     addToCartBtn.textContent = 'Add to Cart';
-    addToCartBtn.className = 'product-card-add-to-cart'; // Add Zid's class for consistency
+    addToCartBtn.className = 'btn btn-primary product-card-add-to-cart'; // Match Zid's classes exactly
+    addToCartBtn.setAttribute('onClick', `productCartAddToCart(this,'${productData.id}')`); // Match Zid's onclick handler exactly
     addToCartBtn.style.cssText = `
       padding: 10px 20px;
       background-color: #4CAF50;
@@ -307,9 +308,6 @@
     });
     addToCartBtn.addEventListener('mouseout', () => {
       addToCartBtn.style.backgroundColor = '#4CAF50';
-    });
-    addToCartBtn.addEventListener('click', () => {
-      handleAddToCart(productData.id, addToCartBtn);
     });
 
     // Close button
