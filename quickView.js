@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.5.2
+// src/scripts/quickView.js v1.5.3
 
 (function() {
   console.log('Quick View script initialized');
@@ -33,7 +33,7 @@
         throw new Error(`Failed to fetch product data: ${response.statusText}`);
       }
       const data = await response.json();
-      console.log('Received product data:', JSON.stringify(data, null, 2));
+      console.log('Received product data:', data);
       return data;
     } catch (error) {
       console.error('Error fetching product data:', error);
@@ -42,6 +42,7 @@
   }
 
   function createImageGallery(images) {
+    console.log('Creating gallery with images:', images);
     const galleryContainer = document.createElement('div');
     galleryContainer.className = 'quick-view-gallery';
     galleryContainer.style.cssText = `
@@ -62,8 +63,14 @@
     `;
 
     const mainImage = document.createElement('img');
-    mainImage.src = images[0]?.url || 'placeholder-url';
-    mainImage.alt = 'Product Image';
+    // Use a placeholder image if no images are available
+    if (images && images.length > 0) {
+        mainImage.src = images[0].url;
+        mainImage.alt = images[0].alt_text || 'Product Image';
+    } else {
+        mainImage.src = 'https://via.placeholder.com/400x400?text=No+Image+Available';
+        mainImage.alt = 'No Image Available';
+    }
     mainImage.style.cssText = `
       width: 100%;
       height: 100%;
@@ -71,87 +78,44 @@
     `;
     mainImageContainer.appendChild(mainImage);
 
-    // Navigation buttons
-    const createNavButton = (text, onClick) => {
-      const button = document.createElement('button');
-      button.textContent = text;
-      button.style.cssText = `
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        background: rgba(255, 255, 255, 0.7);
-        border: none;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        font-size: 20px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      `;
-      button.addEventListener('click', onClick);
-      return button;
-    };
+    // Only create thumbnails if there are multiple images
+    if (images && images.length > 1) {
+        const thumbnailsContainer = document.createElement('div');
+        thumbnailsContainer.style.cssText = `
+          display: flex;
+          gap: 10px;
+          overflow-x: auto;
+          padding: 5px 0;
+        `;
 
-    let currentImageIndex = 0;
+        images.forEach((image, index) => {
+            const thumbnail = document.createElement('img');
+            thumbnail.src = image.thumbnail;
+            thumbnail.alt = image.alt_text || `Product Image ${index + 1}`;
+            thumbnail.style.cssText = `
+              width: 60px;
+              height: 60px;
+              object-fit: cover;
+              border-radius: 4px;
+              cursor: pointer;
+              border: 2px solid ${index === 0 ? '#4CAF50' : 'transparent'};
+            `;
 
-    const prevButton = createNavButton('←', () => {
-      currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
-      mainImage.src = images[currentImageIndex].url;
-      updateThumbnails();
-    });
-    prevButton.style.left = '10px';
+            thumbnail.addEventListener('click', () => {
+                mainImage.src = image.url;
+                thumbnailsContainer.querySelectorAll('img').forEach(thumb => {
+                    thumb.style.border = '2px solid transparent';
+                });
+                thumbnail.style.border = '2px solid #4CAF50';
+            });
 
-    const nextButton = createNavButton('→', () => {
-      currentImageIndex = (currentImageIndex + 1) % images.length;
-      mainImage.src = images[currentImageIndex].url;
-      updateThumbnails();
-    });
-    nextButton.style.right = '10px';
+            thumbnailsContainer.appendChild(thumbnail);
+        });
 
-    mainImageContainer.appendChild(prevButton);
-    mainImageContainer.appendChild(nextButton);
+        galleryContainer.appendChild(thumbnailsContainer);
+    }
 
-    // Thumbnails container
-    const thumbnailsContainer = document.createElement('div');
-    thumbnailsContainer.style.cssText = `
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      padding: 5px 0;
-    `;
-
-    const updateThumbnails = () => {
-      thumbnailsContainer.querySelectorAll('img').forEach((thumb, index) => {
-        thumb.style.border = index === currentImageIndex ? '2px solid #4CAF50' : '2px solid transparent';
-      });
-    };
-
-    images.forEach((image, index) => {
-      const thumbnail = document.createElement('img');
-      thumbnail.src = image.url;
-      thumbnail.alt = `Product Image ${index + 1}`;
-      thumbnail.style.cssText = `
-        width: 60px;
-        height: 60px;
-        object-fit: cover;
-        border-radius: 4px;
-        cursor: pointer;
-        border: 2px solid ${index === 0 ? '#4CAF50' : 'transparent'};
-      `;
-
-      thumbnail.addEventListener('click', () => {
-        mainImage.src = image.url;
-        currentImageIndex = index;
-        updateThumbnails();
-      });
-
-      thumbnailsContainer.appendChild(thumbnail);
-    });
-
-    galleryContainer.appendChild(mainImageContainer);
-    galleryContainer.appendChild(thumbnailsContainer);
+    galleryContainer.insertBefore(mainImageContainer, galleryContainer.firstChild);
     return galleryContainer;
   }
 
@@ -201,9 +165,32 @@
     return attributesContainer;
   }
 
+  function handleAddToCart(productId, buttonElement) {
+    console.log('Adding product to cart:', productId);
+    
+    // Check if Zid's function exists
+    if (typeof window.productCartAddToCart === 'function') {
+      try {
+        // Call Zid's add to cart function
+        window.productCartAddToCart(buttonElement, productId);
+        
+        // Close the modal after adding to cart
+        const modal = document.querySelector('.quick-view-modal');
+        if (modal) {
+          modal.remove();
+        }
+      } catch (error) {
+        console.error('Error adding product to cart:', error);
+        alert('Failed to add product to cart. Please try again.');
+      }
+    } else {
+      console.error('Zid cart function not found');
+      alert('Unable to add product to cart. Please try the main product page.');
+    }
+  }
+
   function displayQuickViewModal(productData) {
     console.log('Displaying Quick View modal for product:', productData);
-    console.log('Full Product Data:', JSON.stringify(productData, null, 2));
     
     const existingModal = document.querySelector('.quick-view-modal');
     if (existingModal) {
@@ -250,8 +237,10 @@
     content.appendChild(title);
 
     // Create and append the image gallery
-    const gallery = createImageGallery(productData.images);
-    content.appendChild(gallery);
+    if (productData.images && productData.images.length > 0) {
+      const gallery = createImageGallery(productData.images);
+      content.appendChild(gallery);
+    }
 
     // Create product details section
     const details = document.createElement('div');
@@ -267,7 +256,7 @@
       color: #4CAF50;
       margin: 10px 0;
     `;
-    price.textContent = `Price: ${productData.price}`;
+    price.textContent = `Price: ${productData.formatted_price || productData.price}`;
     details.appendChild(price);
 
     // Add description
@@ -302,6 +291,7 @@
     // Add to Cart button
     const addToCartBtn = document.createElement('button');
     addToCartBtn.textContent = 'Add to Cart';
+    addToCartBtn.className = 'product-card-add-to-cart'; // Add Zid's class for consistency
     addToCartBtn.style.cssText = `
       padding: 10px 20px;
       background-color: #4CAF50;
@@ -319,8 +309,7 @@
       addToCartBtn.style.backgroundColor = '#4CAF50';
     });
     addToCartBtn.addEventListener('click', () => {
-      console.log('Add to Cart clicked');
-      addToCart(productData.id);
+      handleAddToCart(productData.id, addToCartBtn);
     });
 
     // Close button
@@ -371,11 +360,6 @@
     } catch (error) {
       console.error('Failed to open quick view:', error);
     }
-  }
-
-  function addToCart(productId) {
-    console.log('Adding product to cart:', productId);
-    // TODO: Implement actual add to cart functionality
   }
 
   function addQuickViewButtons() {
@@ -446,7 +430,6 @@
   console.log('MutationObserver set up');
 
   // Expose necessary functions
-  
   window.HMStudioQuickView = {
     openQuickView: openQuickView
   };
