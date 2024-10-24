@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.6.8
+// src/scripts/quickView.js v1.6.9
 
 (function() {
   console.log('Quick View script initialized');
@@ -269,6 +269,8 @@ function handleAddToCart(productData) {
   
   // Check if product has variants
   if (productData.variants && productData.variants.length > 0) {
+      console.log('Product has variants:', productData.variants);
+      
       // Get all variant selections
       const selectedVariants = {};
       form.querySelectorAll('.variant-select').forEach(select => {
@@ -283,14 +285,25 @@ function handleAddToCart(productData) {
           selectedVariants[select.previousElementSibling.textContent] = select.value;
       });
 
+      console.log('Selected variants:', selectedVariants);
+      console.log('Available variants:', productData.variants);
+
       // Find the matching variant
       const selectedVariant = productData.variants.find(variant => {
-          return Object.entries(variant.attributes).every(([key, value]) => {
+          console.log('Checking variant:', variant);
+          console.log('Variant attributes:', variant.attributes);
+          const matches = Object.entries(variant.attributes).every(([key, value]) => {
+              console.log('Checking attribute:', key, 'value:', value);
+              console.log('Against selected values:', Object.values(selectedVariants));
               return Object.values(selectedVariants).includes(value);
           });
+          console.log('Variant matches?', matches);
+          return matches;
       });
 
       if (!selectedVariant) {
+          console.error('No matching variant found');
+          console.log('Selected combinations:', selectedVariants);
           const message = currentLang === 'ar' 
               ? 'هذا المنتج غير متوفر بالمواصفات المختارة'
               : 'This product variant is not available';
@@ -298,7 +311,7 @@ function handleAddToCart(productData) {
           return;
       }
 
-      // Use the variant ID
+      console.log('Found matching variant:', selectedVariant);
       productData = {
           ...productData,
           id: selectedVariant.id
