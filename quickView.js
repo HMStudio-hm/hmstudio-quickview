@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.6.0
+// src/scripts/quickView.js v1.6.1
 
 (function() {
   console.log('Quick View script initialized');
@@ -8,6 +8,10 @@
     const scriptUrl = new URL(scriptTag.src);
     const storeId = scriptUrl.searchParams.get('storeId');
     return storeId ? storeId.split('?')[0] : null;
+  }
+
+  function getCurrentLanguage() {
+    return document.documentElement.lang || 'ar'; // Default to Arabic if not found
   }
 
   const storeId = getStoreIdFromUrl();
@@ -119,105 +123,63 @@
     return galleryContainer;
   }
 
-  function createAttributesSection(attributes) {
-    const attributesContainer = document.createElement('div');
-    attributesContainer.className = 'quick-view-attributes';
-    attributesContainer.style.cssText = `
-      margin-top: 20px;
-      border-top: 1px solid #eee;
-      padding-top: 15px;
-    `;
-
-    if (attributes && attributes.length > 0) {
-      const title = document.createElement('h3');
-      title.textContent = 'Product Attributes';
-      title.style.cssText = `
-        margin: 0 0 10px 0;
-        font-size: 1.1em;
-        color: #333;
-      `;
-      attributesContainer.appendChild(title);
-
-      const attributesList = document.createElement('div');
-      attributesList.style.cssText = `
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 10px;
-      `;
-
-      attributes.forEach(attr => {
-        const attrItem = document.createElement('div');
-        attrItem.style.cssText = `
-          background: #f5f5f5;
-          padding: 8px;
-          border-radius: 4px;
-        `;
-        attrItem.innerHTML = `
-          <strong style="color: #666;">${attr.name.en || attr.name}:</strong>
-          <span style="margin-left: 5px;">${attr.value.en || attr.value}</span>
-        `;
-        attributesList.appendChild(attrItem);
-      });
-
-      attributesContainer.appendChild(attributesList);
-    }
-
-    return attributesContainer;
-  }
-
-  
-
   function createVariantsSection(productData) {
+    const currentLang = getCurrentLanguage();
     const variantsContainer = document.createElement('div');
     variantsContainer.className = 'quick-view-variants';
     variantsContainer.style.cssText = `
-      margin-top: 15px;
-      padding: 10px 0;
+        margin-top: 15px;
+        padding: 10px 0;
     `;
 
     if (productData.variants && productData.variants.length > 0) {
-      // Create dropdown for each variant type
-      const variantTypes = {};
-      productData.variants.forEach(variant => {
-        Object.keys(variant.attributes || {}).forEach(key => {
-          if (!variantTypes[key]) {
-            variantTypes[key] = new Set();
-          }
-          variantTypes[key].add(variant.attributes[key]);
+        const variantTypes = {};
+        productData.variants.forEach(variant => {
+            Object.keys(variant.attributes || {}).forEach(key => {
+                if (!variantTypes[key]) {
+                    variantTypes[key] = new Set();
+                }
+                variantTypes[key].add(variant.attributes[key]);
+            });
         });
-      });
 
-      Object.entries(variantTypes).forEach(([type, values]) => {
-        const select = document.createElement('select');
-        select.className = 'variant-select';
-        select.style.cssText = `
-          margin: 5px 0;
-          padding: 8px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          width: 100%;
-        `;
+        Object.entries(variantTypes).forEach(([type, values]) => {
+            const select = document.createElement('select');
+            select.className = 'variant-select';
+            select.style.cssText = `
+                margin: 5px 0;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                width: 100%;
+            `;
 
-        const label = document.createElement('label');
-        label.textContent = type;
-        label.style.cssText = `
-          display: block;
-          margin-bottom: 5px;
-          font-weight: bold;
-        `;
+            const typeName = type.name ? type.name[currentLang] : type;
+            
+            const label = document.createElement('label');
+            label.textContent = typeName;
+            label.style.cssText = `
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+            `;
 
-        select.innerHTML = `
-          <option value="">Select ${type}</option>
-          ${Array.from(values).map(value => `
-            <option value="${value}">${value}</option>
-          `).join('')}
-        `;
+            // Create placeholder option text based on language
+            const placeholderText = currentLang === 'ar' ? `اختر ${typeName}` : `Select ${typeName}`;
+            
+            select.innerHTML = `
+                <option value="">${placeholderText}</option>
+                ${Array.from(values).map(value => {
+                    const displayValue = value.name ? value.name[currentLang] : value;
+                    return `<option value="${value}">${displayValue}</option>`;
+                }).join('')}
+            `;
 
-        select.addEventListener('change', () => updateSelectedVariant(productData));
-        
-        variantsContainer.appendChild(label);
-        variantsContainer.appendChild(select);
-      });
+            select.addEventListener('change', () => updateSelectedVariant(productData));
+            
+            variantsContainer.appendChild(label);
+            variantsContainer.appendChild(select);
+        });
     }
 
     return variantsContainer;
@@ -229,116 +191,59 @@
 
     const selectedValues = {};
     form.querySelectorAll('.variant-select').forEach(select => {
-      selectedValues[select.previousElementSibling.textContent] = select.value;
+        selectedValues[select.previousElementSibling.textContent] = select.value;
     });
 
     // Find matching variant
     const selectedVariant = productData.variants.find(variant => {
-      return Object.entries(selectedValues).every(([key, value]) => 
-        variant.attributes[key] === value
-      );
+        return Object.entries(selectedValues).every(([key, value]) => 
+            variant.attributes[key] === value
+        );
     });
 
     if (selectedVariant) {
-      // Update product ID
-      const productIdInput = form.querySelector('#product-id');
-      if (productIdInput) {
-        productIdInput.value = selectedVariant.id;
-      }
-
-      // Update price display
-      const priceElement = form.querySelector('#product-price');
-      const oldPriceElement = form.querySelector('#product-old-price');
-      if (priceElement) {
-        if (selectedVariant.formatted_sale_price) {
-          priceElement.textContent = selectedVariant.formatted_sale_price;
-          if (oldPriceElement) {
-            oldPriceElement.textContent = selectedVariant.formatted_price;
-            oldPriceElement.style.display = 'block';
-          }
-        } else {
-          priceElement.textContent = selectedVariant.formatted_price;
-          if (oldPriceElement) {
-            oldPriceElement.style.display = 'none';
-          }
+        // Update product ID
+        const productIdInput = form.querySelector('#product-id');
+        if (productIdInput) {
+            productIdInput.value = selectedVariant.id;
         }
-      }
 
-      // Update add to cart button
-      const addToCartBtn = form.querySelector('.add-to-cart-btn');
-      if (addToCartBtn) {
-        if (!selectedVariant.unavailable) {
-          addToCartBtn.disabled = false;
-          addToCartBtn.classList.remove('disabled');
-          addToCartBtn.style.opacity = '1';
-        } else {
-          addToCartBtn.disabled = true;
-          addToCartBtn.classList.add('disabled');
-          addToCartBtn.style.opacity = '0.5';
+        // Update price display
+        const priceElement = form.querySelector('#product-price');
+        const oldPriceElement = form.querySelector('#product-old-price');
+        if (priceElement) {
+            if (selectedVariant.formatted_sale_price) {
+                priceElement.textContent = selectedVariant.formatted_sale_price;
+                if (oldPriceElement) {
+                    oldPriceElement.textContent = selectedVariant.formatted_price;
+                    oldPriceElement.style.display = 'block';
+                }
+            } else {
+                priceElement.textContent = selectedVariant.formatted_price;
+                if (oldPriceElement) {
+                    oldPriceElement.style.display = 'none';
+                }
+            }
         }
-      }
+
+        // Update add to cart button
+        const addToCartBtn = form.querySelector('.add-to-cart-btn');
+        if (addToCartBtn) {
+            if (!selectedVariant.unavailable) {
+                addToCartBtn.disabled = false;
+                addToCartBtn.classList.remove('disabled');
+                addToCartBtn.style.opacity = '1';
+            } else {
+                addToCartBtn.disabled = true;
+                addToCartBtn.classList.add('disabled');
+                addToCartBtn.style.opacity = '0.5';
+            }
+        }
     }
   }
 
-  function handleAddToCart(productData) {
-    // Create or get the form
-    let productForm = document.getElementById('product-form');
-    if (!productForm) {
-        productForm = document.createElement('form');
-        productForm.id = 'product-form';
-        document.body.appendChild(productForm);
-    }
-
-    // Clear any existing inputs
-    productForm.innerHTML = '';
-
-    // Add required hidden inputs
-    const productIdInput = document.createElement('input');
-    productIdInput.id = 'product-id';
-    productIdInput.type = 'hidden';
-    productIdInput.value = productData.selected_product ? productData.selected_product.id : productData.id;
-    productForm.appendChild(productIdInput);
-
-    const quantityInput = document.createElement('input');
-    quantityInput.id = 'product-quantity';
-    quantityInput.type = 'hidden';
-    quantityInput.value = '1';
-    productForm.appendChild(quantityInput);
-
-    // Show loading spinner
-    document.querySelectorAll('.add-to-cart-progress').forEach(el => {
-        el.classList.remove('d-none');
-    });
-
-    // Call Zid's cart function
-    zid.store.cart.addProduct({ formId: 'product-form' })
-        .then(function (response) {
-            if (response.status === 'success') {
-                alert('Product added to cart successfully');
-                if (typeof setCartBadge === 'function') {
-                    setCartBadge(response.data.cart.products_count);
-                }
-                // Close modal
-                const modal = document.querySelector('.quick-view-modal');
-                if (modal) {
-                    modal.remove();
-                }
-            }
-            // Hide loading spinner
-            document.querySelectorAll('.add-to-cart-progress').forEach(el => {
-                el.classList.add('d-none');
-            });
-        })
-        .catch(function(error) {
-            console.error('Error adding to cart:', error);
-            alert('Failed to add product to cart. Please try again.');
-            document.querySelectorAll('.add-to-cart-progress').forEach(el => {
-                el.classList.add('d-none');
-            });
-        });
-}
-
   function displayQuickViewModal(productData) {
+    const currentLang = getCurrentLanguage();
     console.log('Displaying Quick View modal for product:', productData);
     
     const existingModal = document.querySelector('.quick-view-modal');
@@ -373,6 +278,8 @@
       overflow-y: auto;
       position: relative;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      text-align: ${currentLang === 'ar' ? 'right' : 'left'};
+      direction: ${currentLang === 'ar' ? 'rtl' : 'ltr'};
     `;
 
     // Create form
@@ -382,7 +289,7 @@
 
     // Create and append the title
     const title = document.createElement('h2');
-    title.textContent = productData.name.en || productData.name;
+    title.textContent = productData.name[currentLang] || productData.name;
     title.style.cssText = `
       margin: 0 0 20px 0;
       font-size: 1.5em;
@@ -431,22 +338,18 @@
     }
 
     // Add description
-    if (productData.description) {
+    if (productData.description && productData.description[currentLang]) {
       const description = document.createElement('p');
       description.style.cssText = `
         margin: 15px 0;
         line-height: 1.5;
         color: #666;
       `;
-      description.textContent = productData.description.en || productData.description;
+      description.textContent = productData.description[currentLang];
       details.appendChild(description);
     }
 
     form.appendChild(details);
-
-    // Add attributes section
-    const attributes = createAttributesSection(productData.attributes);
-    form.appendChild(attributes);
 
     // Add hidden inputs
     const productIdInput = document.createElement('input');
@@ -474,7 +377,7 @@
 
     // Add to Cart button
     const addToCartBtn = document.createElement('button');
-    addToCartBtn.textContent = 'Add to Cart';
+    addToCartBtn.textContent = currentLang === 'ar' ? 'أضف إلى السلة' : 'Add to Cart';
     addToCartBtn.className = 'btn btn-primary add-to-cart-btn';
     addToCartBtn.type = 'button';
     addToCartBtn.style.cssText = `
