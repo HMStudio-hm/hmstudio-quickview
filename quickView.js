@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.6.6
+// src/scripts/quickView.js v1.6.7
 
 (function() {
   console.log('Quick View script initialized');
@@ -130,18 +130,27 @@
       padding: 10px 0;
     `;
 
-    console.log('Creating variants section with data:', {
-        variants: productData.variants,
-        attributes: productData.attributes
-    });
+    if (productData.variants && productData.variants.length > 0) {
+        // Get unique variants and their values
+        const variantAttributes = new Map();
+        
+        productData.variants.forEach(variant => {
+            if (variant.attributes && variant.attributes.length > 0) {
+                variant.attributes.forEach(attr => {
+                    if (!variantAttributes.has(attr.name)) {
+                        variantAttributes.set(attr.name, {
+                            name: attr.name,
+                            slug: attr.slug,
+                            values: new Set()
+                        });
+                    }
+                    variantAttributes.get(attr.name).values.add(attr.value[currentLang]);
+                });
+            }
+        });
 
-    if (productData.variants && productData.variants.length > 0 && productData.attributes) {
-      console.log('Product Variants:', JSON.stringify(productData.variants, null, 2));
-console.log('Product Attributes:', JSON.stringify(productData.attributes, null, 2));
-        // Process each attribute from the attributes array
-        productData.attributes.forEach(attribute => {
-            console.log('Processing attribute:', attribute);
-
+        // Create dropdowns for each attribute type
+        variantAttributes.forEach(attr => {
             const select = document.createElement('select');
             select.className = 'variant-select';
             select.style.cssText = `
@@ -152,35 +161,31 @@ console.log('Product Attributes:', JSON.stringify(productData.attributes, null, 
                 width: 100%;
             `;
 
-            // Create label using the slug for Arabic and name for English
+            // Use Arabic slug or English name based on current language
+            const labelText = currentLang === 'ar' ? attr.slug : attr.name;
+            
             const label = document.createElement('label');
-            label.textContent = currentLang === 'ar' ? attribute.slug : attribute.name;
+            label.textContent = labelText;
             label.style.cssText = `
                 display: block;
                 margin-bottom: 5px;
                 font-weight: bold;
             `;
 
-            // Create placeholder text
-            const placeholderText = currentLang === 'ar' 
-                ? `اختر ${attribute.slug}`
-                : `Select ${attribute.name}`;
+            // Create placeholder text based on language
+            const placeholderText = currentLang === 'ar' ? `اختر ${labelText}` : `Select ${labelText}`;
             
-            // Start building options with placeholder
             let optionsHTML = `<option value="">${placeholderText}</option>`;
-
-            // Add options from presets
-            if (attribute.presets && attribute.presets.length > 0) {
-                attribute.presets.forEach(preset => {
-                    console.log('Adding preset:', preset);
-                    optionsHTML += `<option value="${preset.value}">${preset.value}</option>`;
-                });
-            }
-
+            
+            // Add variant options
+            Array.from(attr.values).forEach(value => {
+                optionsHTML += `<option value="${value}">${value}</option>`;
+            });
+            
             select.innerHTML = optionsHTML;
 
             select.addEventListener('change', () => {
-                console.log('Selected value:', select.value);
+                console.log('Selected:', attr.name, select.value);
                 updateSelectedVariant(productData);
             });
 
@@ -196,21 +201,22 @@ function updateSelectedVariant(productData) {
     const form = document.getElementById('product-form');
     if (!form) return;
 
-    // Collect all selected values
+    const currentLang = getCurrentLanguage();
     const selectedValues = {};
-    productData.attributes.forEach(attribute => {
-        const select = form.querySelector(`select[class="variant-select"]`);
-        if (select && select.value) {
-            selectedValues[attribute.name] = select.value;
+
+    // Get all selected values
+    form.querySelectorAll('.variant-select').forEach(select => {
+        if (select.value) {
+            const labelText = select.previousElementSibling.textContent;
+            selectedValues[labelText] = select.value;
         }
     });
 
-    console.log('Selected values:', selectedValues);
-
     // Find matching variant
     const selectedVariant = productData.variants.find(variant => {
-        return Object.entries(selectedValues).every(([key, value]) => {
-            return variant.attributes[key] === value;
+        return variant.attributes.every(attr => {
+            const attrLabel = currentLang === 'ar' ? attr.slug : attr.name;
+            return selectedValues[attrLabel] === attr.value[currentLang];
         });
     });
 
