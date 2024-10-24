@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.6.1
+// src/scripts/quickView.js v1.6.2
 
 (function() {
   console.log('Quick View script initialized');
@@ -241,6 +241,63 @@
         }
     }
   }
+
+  function handleAddToCart(productData) {
+    // Create or get the form
+    let productForm = document.getElementById('product-form');
+    if (!productForm) {
+        productForm = document.createElement('form');
+        productForm.id = 'product-form';
+        document.body.appendChild(productForm);
+    }
+
+    // Clear any existing inputs
+    productForm.innerHTML = '';
+
+    // Add required hidden inputs
+    const productIdInput = document.createElement('input');
+    productIdInput.id = 'product-id';
+    productIdInput.type = 'hidden';
+    productIdInput.value = productData.selected_product ? productData.selected_product.id : productData.id;
+    productForm.appendChild(productIdInput);
+
+    const quantityInput = document.createElement('input');
+    quantityInput.id = 'product-quantity';
+    quantityInput.type = 'hidden';
+    quantityInput.value = '1';
+    productForm.appendChild(quantityInput);
+
+    // Show loading spinner
+    document.querySelectorAll('.add-to-cart-progress').forEach(el => {
+        el.classList.remove('d-none');
+    });
+
+    // Call Zid's cart function
+    zid.store.cart.addProduct({ formId: 'product-form' })
+        .then(function (response) {
+            if (response.status === 'success') {
+                if (typeof setCartBadge === 'function') {
+                    setCartBadge(response.data.cart.products_count);
+                }
+                // Close modal immediately without alert
+                const modal = document.querySelector('.quick-view-modal');
+                if (modal) {
+                    modal.remove();
+                }
+            }
+            // Hide loading spinner
+            document.querySelectorAll('.add-to-cart-progress').forEach(el => {
+                el.classList.add('d-none');
+            });
+        })
+        .catch(function(error) {
+            console.error('Error adding to cart:', error);
+            // Hide loading spinner
+            document.querySelectorAll('.add-to-cart-progress').forEach(el => {
+                el.classList.add('d-none');
+            });
+        });
+}
 
   function displayQuickViewModal(productData) {
     const currentLang = getCurrentLanguage();
