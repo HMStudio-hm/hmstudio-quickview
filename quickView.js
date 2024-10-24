@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.6.3
+// src/scripts/quickView.js v1.6.4
 
 (function() {
   console.log('Quick View script initialized');
@@ -131,79 +131,76 @@
     `;
 
     if (productData.variants && productData.variants.length > 0) {
-      const variantTypes = {};
-      
-      // First, collect all unique variant types and their values
-      productData.variants.forEach(variant => {
-        if (variant.attributes) {
-          Object.entries(variant.attributes).forEach(([key, value]) => {
-            if (!variantTypes[key]) {
-              variantTypes[key] = new Set();
+        // Get unique attributes from variants
+        const variantTypes = {};
+        productData.variants.forEach(variant => {
+            if (variant.attributes) {
+                Object.entries(variant.attributes).forEach(([key, value]) => {
+                    if (!variantTypes[key]) {
+                        variantTypes[key] = new Set();
+                    }
+                    variantTypes[key].add(value);
+                });
             }
-            variantTypes[key].add(value);
-          });
-        }
-      });
-
-      // Create select elements for each variant type
-      Object.entries(variantTypes).forEach(([type, values]) => {
-        const select = document.createElement('select');
-        select.className = 'variant-select';
-        select.style.cssText = `
-          margin: 5px 0;
-          padding: 8px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          width: 100%;
-        `;
-
-        // Get the attribute details from the product data
-        const attributeDetails = productData.attributes?.find(attr => 
-          attr.name === type || attr.slug === type
-        );
-
-        // Use the correct name based on language
-        const labelText = attributeDetails ? 
-          (currentLang === 'ar' ? attributeDetails.slug : attributeDetails.name) : 
-          type;
-
-        const label = document.createElement('label');
-        label.textContent = labelText;
-        label.style.cssText = `
-          display: block;
-          margin-bottom: 5px;
-          font-weight: bold;
-        `;
-
-        // Create placeholder option text based on language
-        const placeholderText = currentLang === 'ar' ? `اختر ${labelText}` : `Select ${labelText}`;
-        
-        // Build options HTML
-        let optionsHTML = `<option value="">${placeholderText}</option>`;
-        
-        // Add the variant options
-        values.forEach(value => {
-          // Find the preset that matches this value
-          const preset = attributeDetails?.presets?.find(p => p.value === value);
-          const displayValue = preset ? preset.value : value;
-          optionsHTML += `<option value="${value}">${displayValue}</option>`;
         });
-        
-        select.innerHTML = optionsHTML;
 
-        // Add change event listener
-        select.addEventListener('change', () => {
-          console.log('Variant selected:', select.value);
-          updateSelectedVariant(productData);
+        // Create dropdowns for each attribute
+        Object.entries(variantTypes).forEach(([type, values]) => {
+            const select = document.createElement('select');
+            select.className = 'variant-select';
+            select.style.cssText = `
+                margin: 5px 0;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                width: 100%;
+            `;
+
+            // Find attribute details
+            const attributeInfo = productData.attributes?.find(attr => 
+                attr.name === type || attr.slug === type || attr.name === 'Size'
+            );
+
+            console.log('Attribute Info:', attributeInfo);
+
+            // Get label text
+            const labelText = currentLang === 'ar' ? attributeInfo?.slug : attributeInfo?.name;
+            
+            const label = document.createElement('label');
+            label.textContent = labelText || type;
+            label.style.cssText = `
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+            `;
+
+            // Create placeholder text
+            const placeholderText = currentLang === 'ar' ? `اختر ${labelText}` : `Select ${labelText}`;
+            let optionsHTML = `<option value="">${placeholderText}</option>`;
+
+            // Add options
+            Array.from(values).forEach(value => {
+                // Find the preset for this value
+                const preset = attributeInfo?.presets?.find(p => p.value === value);
+                // Use the actual value if preset is not found
+                const displayValue = value;
+                optionsHTML += `<option value="${value}">${displayValue}</option>`;
+            });
+
+            select.innerHTML = optionsHTML;
+
+            select.addEventListener('change', () => {
+                console.log('Selected value:', select.value);
+                updateSelectedVariant(productData);
+            });
+
+            variantsContainer.appendChild(label);
+            variantsContainer.appendChild(select);
         });
-        
-        variantsContainer.appendChild(label);
-        variantsContainer.appendChild(select);
-      });
     }
 
     return variantsContainer;
-  }
+}
 
   function updateSelectedVariant(productData) {
     const form = document.getElementById('product-form');
