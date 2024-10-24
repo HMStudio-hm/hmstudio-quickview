@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.6.2
+// src/scripts/quickView.js v1.6.3
 
 (function() {
   console.log('Quick View script initialized');
@@ -67,13 +67,12 @@
     `;
 
     const mainImage = document.createElement('img');
-    // Use a placeholder image if no images are available
     if (images && images.length > 0) {
-        mainImage.src = images[0].url;
-        mainImage.alt = images[0].alt_text || 'Product Image';
+      mainImage.src = images[0].url;
+      mainImage.alt = images[0].alt_text || 'Product Image';
     } else {
-        mainImage.src = 'https://via.placeholder.com/400x400?text=No+Image+Available';
-        mainImage.alt = 'No Image Available';
+      mainImage.src = 'https://via.placeholder.com/400x400?text=No+Image+Available';
+      mainImage.alt = 'No Image Available';
     }
     mainImage.style.cssText = `
       width: 100%;
@@ -82,41 +81,40 @@
     `;
     mainImageContainer.appendChild(mainImage);
 
-    // Only create thumbnails if there are multiple images
     if (images && images.length > 1) {
-        const thumbnailsContainer = document.createElement('div');
-        thumbnailsContainer.style.cssText = `
-          display: flex;
-          gap: 10px;
-          overflow-x: auto;
-          padding: 5px 0;
+      const thumbnailsContainer = document.createElement('div');
+      thumbnailsContainer.style.cssText = `
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 5px 0;
+      `;
+
+      images.forEach((image, index) => {
+        const thumbnail = document.createElement('img');
+        thumbnail.src = image.thumbnail;
+        thumbnail.alt = image.alt_text || `Product Image ${index + 1}`;
+        thumbnail.style.cssText = `
+          width: 60px;
+          height: 60px;
+          object-fit: cover;
+          border-radius: 4px;
+          cursor: pointer;
+          border: 2px solid ${index === 0 ? '#4CAF50' : 'transparent'};
         `;
 
-        images.forEach((image, index) => {
-            const thumbnail = document.createElement('img');
-            thumbnail.src = image.thumbnail;
-            thumbnail.alt = image.alt_text || `Product Image ${index + 1}`;
-            thumbnail.style.cssText = `
-              width: 60px;
-              height: 60px;
-              object-fit: cover;
-              border-radius: 4px;
-              cursor: pointer;
-              border: 2px solid ${index === 0 ? '#4CAF50' : 'transparent'};
-            `;
-
-            thumbnail.addEventListener('click', () => {
-                mainImage.src = image.url;
-                thumbnailsContainer.querySelectorAll('img').forEach(thumb => {
-                    thumb.style.border = '2px solid transparent';
-                });
-                thumbnail.style.border = '2px solid #4CAF50';
-            });
-
-            thumbnailsContainer.appendChild(thumbnail);
+        thumbnail.addEventListener('click', () => {
+          mainImage.src = image.url;
+          thumbnailsContainer.querySelectorAll('img').forEach(thumb => {
+            thumb.style.border = '2px solid transparent';
+          });
+          thumbnail.style.border = '2px solid #4CAF50';
         });
 
-        galleryContainer.appendChild(thumbnailsContainer);
+        thumbnailsContainer.appendChild(thumbnail);
+      });
+
+      galleryContainer.appendChild(thumbnailsContainer);
     }
 
     galleryContainer.insertBefore(mainImageContainer, galleryContainer.firstChild);
@@ -128,58 +126,80 @@
     const variantsContainer = document.createElement('div');
     variantsContainer.className = 'quick-view-variants';
     variantsContainer.style.cssText = `
-        margin-top: 15px;
-        padding: 10px 0;
+      margin-top: 15px;
+      padding: 10px 0;
     `;
 
     if (productData.variants && productData.variants.length > 0) {
-        const variantTypes = {};
-        productData.variants.forEach(variant => {
-            Object.keys(variant.attributes || {}).forEach(key => {
-                if (!variantTypes[key]) {
-                    variantTypes[key] = new Set();
-                }
-                variantTypes[key].add(variant.attributes[key]);
-            });
+      const variantTypes = {};
+      
+      // First, collect all unique variant types and their values
+      productData.variants.forEach(variant => {
+        if (variant.attributes) {
+          Object.entries(variant.attributes).forEach(([key, value]) => {
+            if (!variantTypes[key]) {
+              variantTypes[key] = new Set();
+            }
+            variantTypes[key].add(value);
+          });
+        }
+      });
+
+      // Create select elements for each variant type
+      Object.entries(variantTypes).forEach(([type, values]) => {
+        const select = document.createElement('select');
+        select.className = 'variant-select';
+        select.style.cssText = `
+          margin: 5px 0;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          width: 100%;
+        `;
+
+        // Get the attribute details from the product data
+        const attributeDetails = productData.attributes?.find(attr => 
+          attr.name === type || attr.slug === type
+        );
+
+        // Use the correct name based on language
+        const labelText = attributeDetails ? 
+          (currentLang === 'ar' ? attributeDetails.slug : attributeDetails.name) : 
+          type;
+
+        const label = document.createElement('label');
+        label.textContent = labelText;
+        label.style.cssText = `
+          display: block;
+          margin-bottom: 5px;
+          font-weight: bold;
+        `;
+
+        // Create placeholder option text based on language
+        const placeholderText = currentLang === 'ar' ? `اختر ${labelText}` : `Select ${labelText}`;
+        
+        // Build options HTML
+        let optionsHTML = `<option value="">${placeholderText}</option>`;
+        
+        // Add the variant options
+        values.forEach(value => {
+          // Find the preset that matches this value
+          const preset = attributeDetails?.presets?.find(p => p.value === value);
+          const displayValue = preset ? preset.value : value;
+          optionsHTML += `<option value="${value}">${displayValue}</option>`;
         });
+        
+        select.innerHTML = optionsHTML;
 
-        Object.entries(variantTypes).forEach(([type, values]) => {
-            const select = document.createElement('select');
-            select.className = 'variant-select';
-            select.style.cssText = `
-                margin: 5px 0;
-                padding: 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                width: 100%;
-            `;
-
-            const typeName = type.name ? type.name[currentLang] : type;
-            
-            const label = document.createElement('label');
-            label.textContent = typeName;
-            label.style.cssText = `
-                display: block;
-                margin-bottom: 5px;
-                font-weight: bold;
-            `;
-
-            // Create placeholder option text based on language
-            const placeholderText = currentLang === 'ar' ? `اختر ${typeName}` : `Select ${typeName}`;
-            
-            select.innerHTML = `
-                <option value="">${placeholderText}</option>
-                ${Array.from(values).map(value => {
-                    const displayValue = value.name ? value.name[currentLang] : value;
-                    return `<option value="${value}">${displayValue}</option>`;
-                }).join('')}
-            `;
-
-            select.addEventListener('change', () => updateSelectedVariant(productData));
-            
-            variantsContainer.appendChild(label);
-            variantsContainer.appendChild(select);
+        // Add change event listener
+        select.addEventListener('change', () => {
+          console.log('Variant selected:', select.value);
+          updateSelectedVariant(productData);
         });
+        
+        variantsContainer.appendChild(label);
+        variantsContainer.appendChild(select);
+      });
     }
 
     return variantsContainer;
@@ -189,56 +209,67 @@
     const form = document.getElementById('product-form');
     if (!form) return;
 
+    // Collect all selected values
     const selectedValues = {};
     form.querySelectorAll('.variant-select').forEach(select => {
-        selectedValues[select.previousElementSibling.textContent] = select.value;
+      if (select.value) {  // Only include non-empty selections
+        // Find the attribute name from the label
+        const labelText = select.previousElementSibling.textContent;
+        const attribute = productData.attributes?.find(attr => 
+          attr.name === labelText || attr.slug === labelText
+        );
+        const attributeKey = attribute ? attribute.name : labelText;
+        selectedValues[attributeKey] = select.value;
+      }
     });
 
     // Find matching variant
     const selectedVariant = productData.variants.find(variant => {
-        return Object.entries(selectedValues).every(([key, value]) => 
-            variant.attributes[key] === value
-        );
+      return Object.entries(selectedValues).every(([key, value]) => {
+        return variant.attributes[key] === value;
+      });
     });
 
     if (selectedVariant) {
-        // Update product ID
-        const productIdInput = form.querySelector('#product-id');
-        if (productIdInput) {
-            productIdInput.value = selectedVariant.id;
-        }
+      console.log('Selected variant:', selectedVariant);
+      
+      // Update product ID
+      const productIdInput = form.querySelector('#product-id');
+      if (productIdInput) {
+        productIdInput.value = selectedVariant.id;
+      }
 
-        // Update price display
-        const priceElement = form.querySelector('#product-price');
-        const oldPriceElement = form.querySelector('#product-old-price');
-        if (priceElement) {
-            if (selectedVariant.formatted_sale_price) {
-                priceElement.textContent = selectedVariant.formatted_sale_price;
-                if (oldPriceElement) {
-                    oldPriceElement.textContent = selectedVariant.formatted_price;
-                    oldPriceElement.style.display = 'block';
-                }
-            } else {
-                priceElement.textContent = selectedVariant.formatted_price;
-                if (oldPriceElement) {
-                    oldPriceElement.style.display = 'none';
-                }
-            }
+      // Update price display
+      const priceElement = form.querySelector('#product-price');
+      const oldPriceElement = form.querySelector('#product-old-price');
+      if (priceElement) {
+        if (selectedVariant.formatted_sale_price) {
+          priceElement.textContent = selectedVariant.formatted_sale_price;
+          if (oldPriceElement) {
+            oldPriceElement.textContent = selectedVariant.formatted_price;
+            oldPriceElement.style.display = 'block';
+          }
+        } else {
+          priceElement.textContent = selectedVariant.formatted_price;
+          if (oldPriceElement) {
+            oldPriceElement.style.display = 'none';
+          }
         }
+      }
 
-        // Update add to cart button
-        const addToCartBtn = form.querySelector('.add-to-cart-btn');
-        if (addToCartBtn) {
-            if (!selectedVariant.unavailable) {
-                addToCartBtn.disabled = false;
-                addToCartBtn.classList.remove('disabled');
-                addToCartBtn.style.opacity = '1';
-            } else {
-                addToCartBtn.disabled = true;
-                addToCartBtn.classList.add('disabled');
-                addToCartBtn.style.opacity = '0.5';
-            }
+      // Update add to cart button state
+      const addToCartBtn = form.querySelector('.add-to-cart-btn');
+      if (addToCartBtn) {
+        if (!selectedVariant.unavailable) {
+          addToCartBtn.disabled = false;
+          addToCartBtn.classList.remove('disabled');
+          addToCartBtn.style.opacity = '1';
+        } else {
+          addToCartBtn.disabled = true;
+          addToCartBtn.classList.add('disabled');
+          addToCartBtn.style.opacity = '0.5';
         }
+      }
     }
   }
 
@@ -246,9 +277,9 @@
     // Create or get the form
     let productForm = document.getElementById('product-form');
     if (!productForm) {
-        productForm = document.createElement('form');
-        productForm.id = 'product-form';
-        document.body.appendChild(productForm);
+      productForm = document.createElement('form');
+      productForm.id = 'product-form';
+      document.body.appendChild(productForm);
     }
 
     // Clear any existing inputs
@@ -269,35 +300,35 @@
 
     // Show loading spinner
     document.querySelectorAll('.add-to-cart-progress').forEach(el => {
-        el.classList.remove('d-none');
+      el.classList.remove('d-none');
     });
 
     // Call Zid's cart function
     zid.store.cart.addProduct({ formId: 'product-form' })
-        .then(function (response) {
-            if (response.status === 'success') {
-                if (typeof setCartBadge === 'function') {
-                    setCartBadge(response.data.cart.products_count);
-                }
-                // Close modal immediately without alert
-                const modal = document.querySelector('.quick-view-modal');
-                if (modal) {
-                    modal.remove();
-                }
-            }
-            // Hide loading spinner
-            document.querySelectorAll('.add-to-cart-progress').forEach(el => {
-                el.classList.add('d-none');
-            });
-        })
-        .catch(function(error) {
-            console.error('Error adding to cart:', error);
-            // Hide loading spinner
-            document.querySelectorAll('.add-to-cart-progress').forEach(el => {
-                el.classList.add('d-none');
-            });
+      .then(function (response) {
+        if (response.status === 'success') {
+          if (typeof setCartBadge === 'function') {
+            setCartBadge(response.data.cart.products_count);
+          }
+          // Close modal immediately without alert
+          const modal = document.querySelector('.quick-view-modal');
+          if (modal) {
+            modal.remove();
+          }
+        }
+        // Hide loading spinner
+        document.querySelectorAll('.add-to-cart-progress').forEach(el => {
+          el.classList.add('d-none');
         });
-}
+      })
+      .catch(function(error) {
+        console.error('Error adding to cart:', error);
+        // Hide loading spinner
+        document.querySelectorAll('.add-to-cart-progress').forEach(el => {
+          el.classList.add('d-none');
+        });
+      });
+  }
 
   function displayQuickViewModal(productData) {
     const currentLang = getCurrentLanguage();
