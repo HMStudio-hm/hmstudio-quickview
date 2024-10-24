@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.6.9
+// src/scripts/quickView.js v1.7.0
 
 (function() {
   console.log('Quick View script initialized');
@@ -282,7 +282,14 @@ function handleAddToCart(productData) {
               alert(message);
               throw new Error('Variant not selected');
           }
-          selectedVariants[select.previousElementSibling.textContent] = select.value;
+          // Find the corresponding attribute in product data
+          const labelText = select.previousElementSibling.textContent;
+          const attribute = productData.attributes?.find(attr => 
+              attr.name === labelText || attr.slug === labelText
+          );
+          // Use the English attribute name as the key
+          const attributeKey = attribute ? attribute.name : labelText;
+          selectedVariants[attributeKey] = select.value;
       });
 
       console.log('Selected variants:', selectedVariants);
@@ -292,13 +299,10 @@ function handleAddToCart(productData) {
       const selectedVariant = productData.variants.find(variant => {
           console.log('Checking variant:', variant);
           console.log('Variant attributes:', variant.attributes);
-          const matches = Object.entries(variant.attributes).every(([key, value]) => {
-              console.log('Checking attribute:', key, 'value:', value);
-              console.log('Against selected values:', Object.values(selectedVariants));
-              return Object.values(selectedVariants).includes(value);
+          return Object.entries(variant.attributes).every(([key, value]) => {
+              console.log(`Comparing attribute ${key}: variant value = ${value}, selected value = ${selectedVariants[key]}`);
+              return selectedVariants[key] === value;
           });
-          console.log('Variant matches?', matches);
-          return matches;
       });
 
       if (!selectedVariant) {
@@ -316,6 +320,13 @@ function handleAddToCart(productData) {
           ...productData,
           id: selectedVariant.id
       };
+  }
+
+  // Create or get the form
+  if (!form) {
+      form = document.createElement('form');
+      form.id = 'product-form';
+      document.body.appendChild(form);
   }
 
   // Clear any existing inputs
@@ -351,11 +362,6 @@ function handleAddToCart(productData) {
               if (modal) {
                   modal.remove();
               }
-          } else {
-              const message = currentLang === 'ar' 
-                  ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
-                  : 'Failed to add product to cart';
-              alert(message);
           }
           // Hide loading spinner
           document.querySelectorAll('.add-to-cart-progress').forEach(el => {
@@ -364,10 +370,6 @@ function handleAddToCart(productData) {
       })
       .catch(function(error) {
           console.error('Error adding to cart:', error);
-          const message = currentLang === 'ar' 
-              ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
-              : 'Error adding product to cart';
-          alert(message);
           // Hide loading spinner
           document.querySelectorAll('.add-to-cart-progress').forEach(el => {
               el.classList.add('d-none');
