@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.7.1
+// src/scripts/quickView.js v1.7.2
 
 (function() {
   console.log('Quick View script initialized');
@@ -225,12 +225,16 @@
     console.log('Found variant:', selectedVariant);
 
     if (selectedVariant) {
-      // Update product ID
-      const productIdInput = form.querySelector('#product-id');
-      if (productIdInput) {
-        productIdInput.value = selectedVariant.id;
-        console.log('Updated product ID to:', selectedVariant.id);
+      // Update product ID input
+      let productIdInput = form.querySelector('input[name="product_id"]');
+      if (!productIdInput) {
+        productIdInput = document.createElement('input');
+        productIdInput.type = 'hidden';
+        productIdInput.name = 'product_id';
+        form.appendChild(productIdInput);
       }
+      productIdInput.value = selectedVariant.id;
+      console.log('Updated product ID to:', selectedVariant.id);
 
       // Update price display
       const priceElement = form.querySelector('#product-price');
@@ -317,61 +321,83 @@
       }
 
       console.log('Found matching variant:', selectedVariant);
-      
-      // Update product ID to selected variant ID
-      const productIdInput = form.querySelector('#product-id');
-      if (productIdInput) {
-        productIdInput.value = selectedVariant.id;
-        console.log('Updated product ID to variant ID:', selectedVariant.id);
-      }
     }
+
+    // Ensure required hidden inputs exist and are populated
+    let productIdInput = form.querySelector('input[name="product_id"]');
+    if (!productIdInput) {
+      productIdInput = document.createElement('input');
+      productIdInput.type = 'hidden';
+      productIdInput.name = 'product_id';
+      form.appendChild(productIdInput);
+    }
+    productIdInput.value = form.querySelector('#product-id').value;
+
+    let quantityInput = form.querySelector('input[name="quantity"]');
+    if (!quantityInput) {
+      quantityInput = document.createElement('input');
+      quantityInput.type = 'hidden';
+      quantityInput.name = 'quantity';
+      form.appendChild(quantityInput);
+    }
+    quantityInput.value = '1';
 
     // Show loading spinner
     const loadingSpinners = document.querySelectorAll('.add-to-cart-progress');
     loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
 
-    // Get the form data
+    // Log the form data before submission
     const formData = new FormData(form);
-    console.log('Form data being submitted:', Object.fromEntries(formData));
+    console.log('Form data being submitted:', {
+      product_id: formData.get('product_id'),
+      quantity: formData.get('quantity')
+    });
 
     // Call Zid's cart function
     try {
-      zid.store.cart.addProduct({ formId: 'product-form' })
-        .then(function (response) {
-          console.log('Add to cart response:', response);
-          if (response.status === 'success') {
-            if (typeof setCartBadge === 'function') {
-              setCartBadge(response.data.cart.products_count);
-            }
-            // Close modal immediately without alert
-            const modal = document.querySelector('.quick-view-modal');
-            if (modal) {
-              modal.remove();
-            }
-          } else {
-            console.error('Add to cart failed:', response);
-            const errorMessage = currentLang === 'ar' 
-              ? 'فشل إضافة المنتج إلى السلة'
-              : 'Failed to add product to cart';
-            alert(errorMessage);
+      zid.store.cart.addProduct({ 
+        formId: 'product-form',
+        data: {
+          product_id: formData.get('product_id'),
+          quantity: formData.get('quantity')
+        }
+      })
+      .then(function (response) {
+        console.log('Add to cart response:', response);
+        if (response.status === 'success') {
+          if (typeof setCartBadge === 'function') {
+            setCartBadge(response.data.cart.products_count);
           }
-        })
-        .catch(function(error) {
-          console.error('Error adding to cart:', error);
+          // Close modal immediately without alert
+          const modal = document.querySelector('.quick-view-modal');
+          if (modal) {
+            modal.remove();
+          }
+        } else {
+          console.error('Add to cart failed:', response);
           const errorMessage = currentLang === 'ar' 
-            ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
-            : 'Error occurred while adding product to cart';
+            ? response.data.message || 'فشل إضافة المنتج إلى السلة'
+            : response.data.message || 'Failed to add product to cart';
           alert(errorMessage);
-        })
-        .finally(function() {
-          // Hide loading spinner
-          loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
-        });
+        }
+      })
+      .catch(function(error) {
+        console.error('Error adding to cart:', error);
+        const errorMessage = currentLang === 'ar' 
+          ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
+          : 'Error occurred while adding product to cart';
+        alert(errorMessage);
+      })
+      .finally(function() {
+        // Hide loading spinner
+        loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
+      });
     } catch (error) {
       console.error('Critical error in add to cart:', error);
       loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
     }
   }
+
 
   function displayQuickViewModal(productData) {
     const currentLang = getCurrentLanguage();
@@ -486,12 +512,14 @@
     const productIdInput = document.createElement('input');
     productIdInput.type = 'hidden';
     productIdInput.id = 'product-id';
-    productIdInput.value = productData.selected_product ? productData.selected_product.id : productData.id;
+    productIdInput.name = 'product_id';
+    productIdInput.value = productData.id;
     form.appendChild(productIdInput);
 
     const quantityInput = document.createElement('input');
     quantityInput.type = 'hidden';
     quantityInput.id = 'product-quantity';
+    quantityInput.name = 'quantity';
     quantityInput.value = '1';
     form.appendChild(quantityInput);
 
@@ -523,13 +551,29 @@
     `;
 
     // Add loading spinner
-    const loadingSpinner = document.createElement('img');
+    const loadingSpinner = document.createElement('div');
     loadingSpinner.className = 'add-to-cart-progress d-none';
-    loadingSpinner.src = '/path/to/spinner.gif'; // Update with actual spinner image path
-    loadingSpinner.width = 30;
-    loadingSpinner.height = 30;
-    loadingSpinner.style.marginLeft = '10px';
+    loadingSpinner.style.cssText = `
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      margin-left: 10px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    `;
     addToCartBtn.appendChild(loadingSpinner);
+
+    // Add keyframe animation for spinner
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(styleSheet);
 
     addToCartBtn.addEventListener('click', () => {
       handleAddToCart(productData);
@@ -537,7 +581,7 @@
 
     // Close button
     const closeBtn = document.createElement('button');
-    closeBtn.textContent = 'Close';
+    closeBtn.textContent = currentLang === 'ar' ? 'إغلاق' : 'Close';
     closeBtn.type = 'button';
     closeBtn.style.cssText = `
       padding: 10px 20px;
@@ -560,8 +604,8 @@
       modal.remove();
     });
 
-    buttonsContainer.appendChild(addToCartBtn);
     buttonsContainer.appendChild(closeBtn);
+    buttonsContainer.appendChild(addToCartBtn);
     form.appendChild(buttonsContainer);
 
     modal.appendChild(content);
@@ -601,75 +645,75 @@
     console.log('Found product cards:', productCards.length);
     
     productCards.forEach(card => {
-        if (card.querySelector('.quick-view-btn')) {
-            console.log('Quick View button already exists for a product, skipping');
-            return;
-        }
+      if (card.querySelector('.quick-view-btn')) {
+        console.log('Quick View button already exists for a product, skipping');
+        return;
+      }
 
-        // Get product ID from data-wishlist-id
-        const productId = card.querySelector('[data-wishlist-id]')?.getAttribute('data-wishlist-id');
+      // Get product ID from data-wishlist-id
+      const productId = card.querySelector('[data-wishlist-id]')?.getAttribute('data-wishlist-id');
+      
+      if (productId) {
+        console.log('Found product ID:', productId);
         
-        if (productId) {
-            console.log('Found product ID:', productId);
-            
-            // Find the button container - it's the div with text-align: center
-            const buttonContainer = card.querySelector('div[style*="text-align: center"]');
-            
-            if (buttonContainer) {
-                const button = document.createElement('button');
-                button.className = 'quick-view-btn';
-                button.style.cssText = `
-                    width: 35px;
-                    height: 35px;
-                    padding: 0;
-                    margin: 0 5px;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    background-color: #ffffff;
-                    cursor: pointer;
-                    transition: background-color 0.3s ease;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                `;
+        // Find the button container - it's the div with text-align: center
+        const buttonContainer = card.querySelector('div[style*="text-align: center"]');
+        
+        if (buttonContainer) {
+          const button = document.createElement('button');
+          button.className = 'quick-view-btn';
+          button.style.cssText = `
+            width: 35px;
+            height: 35px;
+            padding: 0;
+            margin: 0 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #ffffff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          `;
 
-                // Add eye icon using SVG
-                button.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                `;
+          // Add eye icon using SVG
+          button.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          `;
 
-                button.addEventListener('mouseover', () => {
-                    button.style.backgroundColor = '#f0f0f0';
-                });
+          button.addEventListener('mouseover', () => {
+            button.style.backgroundColor = '#f0f0f0';
+          });
 
-                button.addEventListener('mouseout', () => {
-                    button.style.backgroundColor = '#ffffff';
-                });
+          button.addEventListener('mouseout', () => {
+            button.style.backgroundColor = '#ffffff';
+          });
 
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    console.log('Quick View button clicked for product ID:', productId);
-                    openQuickView(productId);
-                });
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Quick View button clicked for product ID:', productId);
+            openQuickView(productId);
+          });
 
-                // Insert before the first button in the container
-                const firstButton = buttonContainer.querySelector('a, button');
-                if (firstButton) {
-                    if (config.quickViewStyle === 'left') {
-                        buttonContainer.insertBefore(button, firstButton);
-                    } else {
-                        buttonContainer.insertBefore(button, firstButton.nextSibling);
-                    }
-                } else {
-                    buttonContainer.appendChild(button);
-                }
+          // Insert before the first button in the container
+          const firstButton = buttonContainer.querySelector('a, button');
+          if (firstButton) {
+            if (config.quickViewStyle === 'left') {
+              buttonContainer.insertBefore(button, firstButton);
+            } else {
+              buttonContainer.insertBefore(button, firstButton.nextSibling);
             }
+          } else {
+            buttonContainer.appendChild(button);
+          }
         }
+      }
     });
-}
+  }
 
   // Initial setup
   console.log('Running initial setup');
