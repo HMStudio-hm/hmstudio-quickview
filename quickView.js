@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.7.0
+// src/scripts/quickView.js v1.7.1
 
 (function() {
   console.log('Quick View script initialized');
@@ -131,251 +131,247 @@
     `;
 
     if (productData.variants && productData.variants.length > 0) {
-        // Get unique variants and their values
-        const variantAttributes = new Map();
-        
-        productData.variants.forEach(variant => {
-            if (variant.attributes && variant.attributes.length > 0) {
-                variant.attributes.forEach(attr => {
-                    if (!variantAttributes.has(attr.name)) {
-                        variantAttributes.set(attr.name, {
-                            name: attr.name,
-                            slug: attr.slug,
-                            values: new Set()
-                        });
-                    }
-                    variantAttributes.get(attr.name).values.add(attr.value[currentLang]);
-                });
+      // Get unique variants and their values
+      const variantAttributes = new Map();
+      
+      productData.variants.forEach(variant => {
+        if (variant.attributes && variant.attributes.length > 0) {
+          variant.attributes.forEach(attr => {
+            if (!variantAttributes.has(attr.name)) {
+              variantAttributes.set(attr.name, {
+                name: attr.name,
+                slug: attr.slug,
+                values: new Set()
+              });
             }
+            variantAttributes.get(attr.name).values.add(attr.value[currentLang]);
+          });
+        }
+      });
+
+      // Create dropdowns for each attribute type
+      variantAttributes.forEach(attr => {
+        const select = document.createElement('select');
+        select.className = 'variant-select';
+        select.style.cssText = `
+          margin: 5px 0;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          width: 100%;
+        `;
+
+        const labelText = currentLang === 'ar' ? attr.slug : attr.name;
+        
+        const label = document.createElement('label');
+        label.textContent = labelText;
+        label.style.cssText = `
+          display: block;
+          margin-bottom: 5px;
+          font-weight: bold;
+        `;
+
+        const placeholderText = currentLang === 'ar' ? `اختر ${labelText}` : `Select ${labelText}`;
+        
+        let optionsHTML = `<option value="">${placeholderText}</option>`;
+        
+        Array.from(attr.values).forEach(value => {
+          optionsHTML += `<option value="${value}">${value}</option>`;
+        });
+        
+        select.innerHTML = optionsHTML;
+
+        select.addEventListener('change', () => {
+          console.log('Selected:', attr.name, select.value);
+          updateSelectedVariant(productData);
         });
 
-        // Create dropdowns for each attribute type
-        variantAttributes.forEach(attr => {
-            const select = document.createElement('select');
-            select.className = 'variant-select';
-            select.style.cssText = `
-                margin: 5px 0;
-                padding: 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                width: 100%;
-            `;
-
-            // Use Arabic slug or English name based on current language
-            const labelText = currentLang === 'ar' ? attr.slug : attr.name;
-            
-            const label = document.createElement('label');
-            label.textContent = labelText;
-            label.style.cssText = `
-                display: block;
-                margin-bottom: 5px;
-                font-weight: bold;
-            `;
-
-            // Create placeholder text based on language
-            const placeholderText = currentLang === 'ar' ? `اختر ${labelText}` : `Select ${labelText}`;
-            
-            let optionsHTML = `<option value="">${placeholderText}</option>`;
-            
-            // Add variant options
-            Array.from(attr.values).forEach(value => {
-                optionsHTML += `<option value="${value}">${value}</option>`;
-            });
-            
-            select.innerHTML = optionsHTML;
-
-            select.addEventListener('change', () => {
-                console.log('Selected:', attr.name, select.value);
-                updateSelectedVariant(productData);
-            });
-
-            variantsContainer.appendChild(label);
-            variantsContainer.appendChild(select);
-        });
+        variantsContainer.appendChild(label);
+        variantsContainer.appendChild(select);
+      });
     }
 
     return variantsContainer;
-}
+  }
 
-function updateSelectedVariant(productData) {
+  function updateSelectedVariant(productData) {
     const form = document.getElementById('product-form');
-    if (!form) return;
+    if (!form) {
+      console.error('Product form not found');
+      return;
+    }
 
     const currentLang = getCurrentLanguage();
     const selectedValues = {};
 
     // Get all selected values
     form.querySelectorAll('.variant-select').forEach(select => {
-        if (select.value) {
-            const labelText = select.previousElementSibling.textContent;
-            selectedValues[labelText] = select.value;
-        }
+      if (select.value) {
+        const labelText = select.previousElementSibling.textContent;
+        selectedValues[labelText] = select.value;
+      }
     });
+
+    console.log('Selected values:', selectedValues);
 
     // Find matching variant
     const selectedVariant = productData.variants.find(variant => {
-        return variant.attributes.every(attr => {
-            const attrLabel = currentLang === 'ar' ? attr.slug : attr.name;
-            return selectedValues[attrLabel] === attr.value[currentLang];
-        });
+      return variant.attributes.every(attr => {
+        const attrLabel = currentLang === 'ar' ? attr.slug : attr.name;
+        return selectedValues[attrLabel] === attr.value[currentLang];
+      });
     });
 
+    console.log('Found variant:', selectedVariant);
+
     if (selectedVariant) {
-        console.log('Found matching variant:', selectedVariant);
-        
-        // Update product ID
-        const productIdInput = form.querySelector('#product-id');
-        if (productIdInput) {
-            productIdInput.value = selectedVariant.id;
-        }
+      // Update product ID
+      const productIdInput = form.querySelector('#product-id');
+      if (productIdInput) {
+        productIdInput.value = selectedVariant.id;
+        console.log('Updated product ID to:', selectedVariant.id);
+      }
 
-        // Update price display
-        const priceElement = form.querySelector('#product-price');
-        const oldPriceElement = form.querySelector('#product-old-price');
-        if (priceElement) {
-            if (selectedVariant.formatted_sale_price) {
-                priceElement.textContent = selectedVariant.formatted_sale_price;
-                if (oldPriceElement) {
-                    oldPriceElement.textContent = selectedVariant.formatted_price;
-                    oldPriceElement.style.display = 'block';
-                }
-            } else {
-                priceElement.textContent = selectedVariant.formatted_price;
-                if (oldPriceElement) {
-                    oldPriceElement.style.display = 'none';
-                }
-            }
+      // Update price display
+      const priceElement = form.querySelector('#product-price');
+      const oldPriceElement = form.querySelector('#product-old-price');
+      
+      if (priceElement) {
+        if (selectedVariant.formatted_sale_price) {
+          priceElement.textContent = selectedVariant.formatted_sale_price;
+          if (oldPriceElement) {
+            oldPriceElement.textContent = selectedVariant.formatted_price;
+            oldPriceElement.style.display = 'block';
+          }
+        } else {
+          priceElement.textContent = selectedVariant.formatted_price;
+          if (oldPriceElement) {
+            oldPriceElement.style.display = 'none';
+          }
         }
+      }
 
-        // Update add to cart button
-        const addToCartBtn = form.querySelector('.add-to-cart-btn');
-        if (addToCartBtn) {
-            if (!selectedVariant.unavailable) {
-                addToCartBtn.disabled = false;
-                addToCartBtn.classList.remove('disabled');
-                addToCartBtn.style.opacity = '1';
-            } else {
-                addToCartBtn.disabled = true;
-                addToCartBtn.classList.add('disabled');
-                addToCartBtn.style.opacity = '0.5';
-            }
+      // Update add to cart button
+      const addToCartBtn = form.querySelector('.add-to-cart-btn');
+      if (addToCartBtn) {
+        if (!selectedVariant.unavailable) {
+          addToCartBtn.disabled = false;
+          addToCartBtn.classList.remove('disabled');
+          addToCartBtn.style.opacity = '1';
+        } else {
+          addToCartBtn.disabled = true;
+          addToCartBtn.classList.add('disabled');
+          addToCartBtn.style.opacity = '0.5';
         }
+      }
     }
-}
+  }
 
-function handleAddToCart(productData) {
-  const currentLang = getCurrentLanguage();
-  const form = document.getElementById('product-form');
-  
-  // Check if product has variants
-  if (productData.variants && productData.variants.length > 0) {
+  function handleAddToCart(productData) {
+    const currentLang = getCurrentLanguage();
+    const form = document.getElementById('product-form');
+    
+    // Check if product has variants
+    if (productData.variants && productData.variants.length > 0) {
       console.log('Product has variants:', productData.variants);
       
       // Get all variant selections
       const selectedVariants = {};
+      const missingSelections = [];
+      
       form.querySelectorAll('.variant-select').forEach(select => {
-          if (!select.value) {
-              const variantName = select.previousElementSibling.textContent;
-              const message = currentLang === 'ar' 
-                  ? `الرجاء اختيار ${variantName}`
-                  : `Please select ${variantName}`;
-              alert(message);
-              throw new Error('Variant not selected');
-          }
-          // Find the corresponding attribute in product data
-          const labelText = select.previousElementSibling.textContent;
-          const attribute = productData.attributes?.find(attr => 
-              attr.name === labelText || attr.slug === labelText
-          );
-          // Use the English attribute name as the key
-          const attributeKey = attribute ? attribute.name : labelText;
-          selectedVariants[attributeKey] = select.value;
+        const labelText = select.previousElementSibling.textContent;
+        if (!select.value) {
+          missingSelections.push(labelText);
+        }
+        selectedVariants[labelText] = select.value;
       });
 
+      // Check if all variants are selected
+      if (missingSelections.length > 0) {
+        const message = currentLang === 'ar' 
+          ? `الرجاء اختيار ${missingSelections.join(', ')}`
+          : `Please select ${missingSelections.join(', ')}`;
+        alert(message);
+        return;
+      }
+
       console.log('Selected variants:', selectedVariants);
-      console.log('Available variants:', productData.variants);
 
       // Find the matching variant
       const selectedVariant = productData.variants.find(variant => {
-          console.log('Checking variant:', variant);
-          console.log('Variant attributes:', variant.attributes);
-          return Object.entries(variant.attributes).every(([key, value]) => {
-              console.log(`Comparing attribute ${key}: variant value = ${value}, selected value = ${selectedVariants[key]}`);
-              return selectedVariants[key] === value;
-          });
+        return variant.attributes.every(attr => {
+          const attrLabel = currentLang === 'ar' ? attr.slug : attr.name;
+          return selectedVariants[attrLabel] === attr.value[currentLang];
+        });
       });
 
       if (!selectedVariant) {
-          console.error('No matching variant found');
-          console.log('Selected combinations:', selectedVariants);
-          const message = currentLang === 'ar' 
-              ? 'هذا المنتج غير متوفر بالمواصفات المختارة'
-              : 'This product variant is not available';
-          alert(message);
-          return;
+        console.error('No matching variant found');
+        console.log('Selected combinations:', selectedVariants);
+        const message = currentLang === 'ar' 
+          ? 'هذا المنتج غير متوفر بالمواصفات المختارة'
+          : 'This product variant is not available';
+        alert(message);
+        return;
       }
 
       console.log('Found matching variant:', selectedVariant);
-      productData = {
-          ...productData,
-          id: selectedVariant.id
-      };
-  }
+      
+      // Update product ID to selected variant ID
+      const productIdInput = form.querySelector('#product-id');
+      if (productIdInput) {
+        productIdInput.value = selectedVariant.id;
+        console.log('Updated product ID to variant ID:', selectedVariant.id);
+      }
+    }
 
-  // Create or get the form
-  if (!form) {
-      form = document.createElement('form');
-      form.id = 'product-form';
-      document.body.appendChild(form);
-  }
+    // Show loading spinner
+    const loadingSpinners = document.querySelectorAll('.add-to-cart-progress');
+    loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
 
-  // Clear any existing inputs
-  form.innerHTML = '';
+    // Get the form data
+    const formData = new FormData(form);
+    console.log('Form data being submitted:', Object.fromEntries(formData));
 
-  // Add required hidden inputs
-  const productIdInput = document.createElement('input');
-  productIdInput.id = 'product-id';
-  productIdInput.type = 'hidden';
-  productIdInput.value = productData.id;
-  form.appendChild(productIdInput);
-
-  const quantityInput = document.createElement('input');
-  quantityInput.id = 'product-quantity';
-  quantityInput.type = 'hidden';
-  quantityInput.value = '1';
-  form.appendChild(quantityInput);
-
-  // Show loading spinner
-  document.querySelectorAll('.add-to-cart-progress').forEach(el => {
-      el.classList.remove('d-none');
-  });
-
-  // Call Zid's cart function
-  zid.store.cart.addProduct({ formId: 'product-form' })
-      .then(function (response) {
+    // Call Zid's cart function
+    try {
+      zid.store.cart.addProduct({ formId: 'product-form' })
+        .then(function (response) {
+          console.log('Add to cart response:', response);
           if (response.status === 'success') {
-              if (typeof setCartBadge === 'function') {
-                  setCartBadge(response.data.cart.products_count);
-              }
-              // Close modal immediately without alert
-              const modal = document.querySelector('.quick-view-modal');
-              if (modal) {
-                  modal.remove();
-              }
+            if (typeof setCartBadge === 'function') {
+              setCartBadge(response.data.cart.products_count);
+            }
+            // Close modal immediately without alert
+            const modal = document.querySelector('.quick-view-modal');
+            if (modal) {
+              modal.remove();
+            }
+          } else {
+            console.error('Add to cart failed:', response);
+            const errorMessage = currentLang === 'ar' 
+              ? 'فشل إضافة المنتج إلى السلة'
+              : 'Failed to add product to cart';
+            alert(errorMessage);
           }
-          // Hide loading spinner
-          document.querySelectorAll('.add-to-cart-progress').forEach(el => {
-              el.classList.add('d-none');
-          });
-      })
-      .catch(function(error) {
+        })
+        .catch(function(error) {
           console.error('Error adding to cart:', error);
+          const errorMessage = currentLang === 'ar' 
+            ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
+            : 'Error occurred while adding product to cart';
+          alert(errorMessage);
+        })
+        .finally(function() {
           // Hide loading spinner
-          document.querySelectorAll('.add-to-cart-progress').forEach(el => {
-              el.classList.add('d-none');
-          });
-      });
-}
+          loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
+        });
+    } catch (error) {
+      console.error('Critical error in add to cart:', error);
+      loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
+    }
+  }
 
   function displayQuickViewModal(productData) {
     const currentLang = getCurrentLanguage();
