@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.6.4
+// src/scripts/quickView.js v1.6.5
 
 (function() {
   console.log('Quick View script initialized');
@@ -130,22 +130,16 @@
       padding: 10px 0;
     `;
 
-    if (productData.variants && productData.variants.length > 0) {
-        // Get unique attributes from variants
-        const variantTypes = {};
-        productData.variants.forEach(variant => {
-            if (variant.attributes) {
-                Object.entries(variant.attributes).forEach(([key, value]) => {
-                    if (!variantTypes[key]) {
-                        variantTypes[key] = new Set();
-                    }
-                    variantTypes[key].add(value);
-                });
-            }
-        });
+    console.log('Creating variants section with data:', {
+        variants: productData.variants,
+        attributes: productData.attributes
+    });
 
-        // Create dropdowns for each attribute
-        Object.entries(variantTypes).forEach(([type, values]) => {
+    if (productData.variants && productData.variants.length > 0 && productData.attributes) {
+        // Process each attribute from the attributes array
+        productData.attributes.forEach(attribute => {
+            console.log('Processing attribute:', attribute);
+
             const select = document.createElement('select');
             select.className = 'variant-select';
             select.style.cssText = `
@@ -156,18 +150,9 @@
                 width: 100%;
             `;
 
-            // Find attribute details
-            const attributeInfo = productData.attributes?.find(attr => 
-                attr.name === type || attr.slug === type || attr.name === 'Size'
-            );
-
-            console.log('Attribute Info:', attributeInfo);
-
-            // Get label text
-            const labelText = currentLang === 'ar' ? attributeInfo?.slug : attributeInfo?.name;
-            
+            // Create label using the slug for Arabic and name for English
             const label = document.createElement('label');
-            label.textContent = labelText || type;
+            label.textContent = currentLang === 'ar' ? attribute.slug : attribute.name;
             label.style.cssText = `
                 display: block;
                 margin-bottom: 5px;
@@ -175,17 +160,20 @@
             `;
 
             // Create placeholder text
-            const placeholderText = currentLang === 'ar' ? `اختر ${labelText}` : `Select ${labelText}`;
+            const placeholderText = currentLang === 'ar' 
+                ? `اختر ${attribute.slug}`
+                : `Select ${attribute.name}`;
+            
+            // Start building options with placeholder
             let optionsHTML = `<option value="">${placeholderText}</option>`;
 
-            // Add options
-            Array.from(values).forEach(value => {
-                // Find the preset for this value
-                const preset = attributeInfo?.presets?.find(p => p.value === value);
-                // Use the actual value if preset is not found
-                const displayValue = value;
-                optionsHTML += `<option value="${value}">${displayValue}</option>`;
-            });
+            // Add options from presets
+            if (attribute.presets && attribute.presets.length > 0) {
+                attribute.presets.forEach(preset => {
+                    console.log('Adding preset:', preset);
+                    optionsHTML += `<option value="${preset.value}">${preset.value}</option>`;
+                });
+            }
 
             select.innerHTML = optionsHTML;
 
@@ -202,73 +190,70 @@
     return variantsContainer;
 }
 
-  function updateSelectedVariant(productData) {
+function updateSelectedVariant(productData) {
     const form = document.getElementById('product-form');
     if (!form) return;
 
     // Collect all selected values
     const selectedValues = {};
-    form.querySelectorAll('.variant-select').forEach(select => {
-      if (select.value) {  // Only include non-empty selections
-        // Find the attribute name from the label
-        const labelText = select.previousElementSibling.textContent;
-        const attribute = productData.attributes?.find(attr => 
-          attr.name === labelText || attr.slug === labelText
-        );
-        const attributeKey = attribute ? attribute.name : labelText;
-        selectedValues[attributeKey] = select.value;
-      }
+    productData.attributes.forEach(attribute => {
+        const select = form.querySelector(`select[class="variant-select"]`);
+        if (select && select.value) {
+            selectedValues[attribute.name] = select.value;
+        }
     });
+
+    console.log('Selected values:', selectedValues);
 
     // Find matching variant
     const selectedVariant = productData.variants.find(variant => {
-      return Object.entries(selectedValues).every(([key, value]) => {
-        return variant.attributes[key] === value;
-      });
+        return Object.entries(selectedValues).every(([key, value]) => {
+            return variant.attributes[key] === value;
+        });
     });
 
     if (selectedVariant) {
-      console.log('Selected variant:', selectedVariant);
-      
-      // Update product ID
-      const productIdInput = form.querySelector('#product-id');
-      if (productIdInput) {
-        productIdInput.value = selectedVariant.id;
-      }
-
-      // Update price display
-      const priceElement = form.querySelector('#product-price');
-      const oldPriceElement = form.querySelector('#product-old-price');
-      if (priceElement) {
-        if (selectedVariant.formatted_sale_price) {
-          priceElement.textContent = selectedVariant.formatted_sale_price;
-          if (oldPriceElement) {
-            oldPriceElement.textContent = selectedVariant.formatted_price;
-            oldPriceElement.style.display = 'block';
-          }
-        } else {
-          priceElement.textContent = selectedVariant.formatted_price;
-          if (oldPriceElement) {
-            oldPriceElement.style.display = 'none';
-          }
+        console.log('Found matching variant:', selectedVariant);
+        
+        // Update product ID
+        const productIdInput = form.querySelector('#product-id');
+        if (productIdInput) {
+            productIdInput.value = selectedVariant.id;
         }
-      }
 
-      // Update add to cart button state
-      const addToCartBtn = form.querySelector('.add-to-cart-btn');
-      if (addToCartBtn) {
-        if (!selectedVariant.unavailable) {
-          addToCartBtn.disabled = false;
-          addToCartBtn.classList.remove('disabled');
-          addToCartBtn.style.opacity = '1';
-        } else {
-          addToCartBtn.disabled = true;
-          addToCartBtn.classList.add('disabled');
-          addToCartBtn.style.opacity = '0.5';
+        // Update price display
+        const priceElement = form.querySelector('#product-price');
+        const oldPriceElement = form.querySelector('#product-old-price');
+        if (priceElement) {
+            if (selectedVariant.formatted_sale_price) {
+                priceElement.textContent = selectedVariant.formatted_sale_price;
+                if (oldPriceElement) {
+                    oldPriceElement.textContent = selectedVariant.formatted_price;
+                    oldPriceElement.style.display = 'block';
+                }
+            } else {
+                priceElement.textContent = selectedVariant.formatted_price;
+                if (oldPriceElement) {
+                    oldPriceElement.style.display = 'none';
+                }
+            }
         }
-      }
+
+        // Update add to cart button
+        const addToCartBtn = form.querySelector('.add-to-cart-btn');
+        if (addToCartBtn) {
+            if (!selectedVariant.unavailable) {
+                addToCartBtn.disabled = false;
+                addToCartBtn.classList.remove('disabled');
+                addToCartBtn.style.opacity = '1';
+            } else {
+                addToCartBtn.disabled = true;
+                addToCartBtn.classList.add('disabled');
+                addToCartBtn.style.opacity = '0.5';
+            }
+        }
     }
-  }
+}
 
   function handleAddToCart(productData) {
     // Create or get the form
