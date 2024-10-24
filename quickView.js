@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.6.5
+// src/scripts/quickView.js v1.6.6
 
 (function() {
   console.log('Quick View script initialized');
@@ -136,6 +136,8 @@
     });
 
     if (productData.variants && productData.variants.length > 0 && productData.attributes) {
+      console.log('Product Variants:', JSON.stringify(productData.variants, null, 2));
+console.log('Product Attributes:', JSON.stringify(productData.attributes, null, 2));
         // Process each attribute from the attributes array
         productData.attributes.forEach(attribute => {
             console.log('Processing attribute:', attribute);
