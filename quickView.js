@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.6.7
+// src/scripts/quickView.js v1.6.8
 
 (function() {
   console.log('Quick View script initialized');
@@ -263,62 +263,104 @@ function updateSelectedVariant(productData) {
     }
 }
 
-  function handleAddToCart(productData) {
-    // Create or get the form
-    let productForm = document.getElementById('product-form');
-    if (!productForm) {
-      productForm = document.createElement('form');
-      productForm.id = 'product-form';
-      document.body.appendChild(productForm);
-    }
+function handleAddToCart(productData) {
+  const currentLang = getCurrentLanguage();
+  const form = document.getElementById('product-form');
+  
+  // Check if product has variants
+  if (productData.variants && productData.variants.length > 0) {
+      // Get all variant selections
+      const selectedVariants = {};
+      form.querySelectorAll('.variant-select').forEach(select => {
+          if (!select.value) {
+              const variantName = select.previousElementSibling.textContent;
+              const message = currentLang === 'ar' 
+                  ? `الرجاء اختيار ${variantName}`
+                  : `Please select ${variantName}`;
+              alert(message);
+              throw new Error('Variant not selected');
+          }
+          selectedVariants[select.previousElementSibling.textContent] = select.value;
+      });
 
-    // Clear any existing inputs
-    productForm.innerHTML = '';
+      // Find the matching variant
+      const selectedVariant = productData.variants.find(variant => {
+          return Object.entries(variant.attributes).every(([key, value]) => {
+              return Object.values(selectedVariants).includes(value);
+          });
+      });
 
-    // Add required hidden inputs
-    const productIdInput = document.createElement('input');
-    productIdInput.id = 'product-id';
-    productIdInput.type = 'hidden';
-    productIdInput.value = productData.selected_product ? productData.selected_product.id : productData.id;
-    productForm.appendChild(productIdInput);
+      if (!selectedVariant) {
+          const message = currentLang === 'ar' 
+              ? 'هذا المنتج غير متوفر بالمواصفات المختارة'
+              : 'This product variant is not available';
+          alert(message);
+          return;
+      }
 
-    const quantityInput = document.createElement('input');
-    quantityInput.id = 'product-quantity';
-    quantityInput.type = 'hidden';
-    quantityInput.value = '1';
-    productForm.appendChild(quantityInput);
+      // Use the variant ID
+      productData = {
+          ...productData,
+          id: selectedVariant.id
+      };
+  }
 
-    // Show loading spinner
-    document.querySelectorAll('.add-to-cart-progress').forEach(el => {
+  // Clear any existing inputs
+  form.innerHTML = '';
+
+  // Add required hidden inputs
+  const productIdInput = document.createElement('input');
+  productIdInput.id = 'product-id';
+  productIdInput.type = 'hidden';
+  productIdInput.value = productData.id;
+  form.appendChild(productIdInput);
+
+  const quantityInput = document.createElement('input');
+  quantityInput.id = 'product-quantity';
+  quantityInput.type = 'hidden';
+  quantityInput.value = '1';
+  form.appendChild(quantityInput);
+
+  // Show loading spinner
+  document.querySelectorAll('.add-to-cart-progress').forEach(el => {
       el.classList.remove('d-none');
-    });
+  });
 
-    // Call Zid's cart function
-    zid.store.cart.addProduct({ formId: 'product-form' })
+  // Call Zid's cart function
+  zid.store.cart.addProduct({ formId: 'product-form' })
       .then(function (response) {
-        if (response.status === 'success') {
-          if (typeof setCartBadge === 'function') {
-            setCartBadge(response.data.cart.products_count);
+          if (response.status === 'success') {
+              if (typeof setCartBadge === 'function') {
+                  setCartBadge(response.data.cart.products_count);
+              }
+              // Close modal immediately without alert
+              const modal = document.querySelector('.quick-view-modal');
+              if (modal) {
+                  modal.remove();
+              }
+          } else {
+              const message = currentLang === 'ar' 
+                  ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
+                  : 'Failed to add product to cart';
+              alert(message);
           }
-          // Close modal immediately without alert
-          const modal = document.querySelector('.quick-view-modal');
-          if (modal) {
-            modal.remove();
-          }
-        }
-        // Hide loading spinner
-        document.querySelectorAll('.add-to-cart-progress').forEach(el => {
-          el.classList.add('d-none');
-        });
+          // Hide loading spinner
+          document.querySelectorAll('.add-to-cart-progress').forEach(el => {
+              el.classList.add('d-none');
+          });
       })
       .catch(function(error) {
-        console.error('Error adding to cart:', error);
-        // Hide loading spinner
-        document.querySelectorAll('.add-to-cart-progress').forEach(el => {
-          el.classList.add('d-none');
-        });
+          console.error('Error adding to cart:', error);
+          const message = currentLang === 'ar' 
+              ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
+              : 'Error adding product to cart';
+          alert(message);
+          // Hide loading spinner
+          document.querySelectorAll('.add-to-cart-progress').forEach(el => {
+              el.classList.add('d-none');
+          });
       });
-  }
+}
 
   function displayQuickViewModal(productData) {
     const currentLang = getCurrentLanguage();
