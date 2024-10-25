@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.7.5
+// src/scripts/quickView.js v1.7.6
 
 (function() {
   console.log('Quick View script initialized');
@@ -345,53 +345,29 @@
     loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
   
     try {
-      // First, add the product to cart
+      // Add to cart with the selected quantity directly
       zid.store.cart.addProduct({
         formId: 'product-form',
         data: {
           product_id: form.querySelector('input[name="product_id"]').value,
-          quantity: 1 // Initially add with quantity 1
+          quantity: quantity // Use the selected quantity directly
         }
       }).then(function (response) {
+        console.log('Add to cart response:', response);
         if (response.status === 'success') {
-          // If quantity is more than 1, update the quantity using Zid's cart update function
-          if (quantity > 1) {
-            const productId = form.querySelector('input[name="product_id"]').value;
-            
-            // Use Zid's cart update function
-            zid.store.cart.update({
-              product: {
-                id: productId,
-                quantity: quantity
-              }
-            }).then(function(updateResponse) {
-              console.log('Cart update response:', updateResponse);
-              
-              if (typeof setCartBadge === 'function') {
-                setCartBadge(updateResponse.cart.products_count);
-              }
-              
-              // Close modal
-              const modal = document.querySelector('.quick-view-modal');
-              if (modal) {
-                modal.remove();
-              }
-            }).catch(function(error) {
-              console.error('Error updating cart quantity:', error);
-              const errorMessage = currentLang === 'ar'
-                ? 'حدث خطأ أثناء تحديث الكمية'
-                : 'Error updating quantity';
-              alert(errorMessage);
-            });
-          } else {
-            // If quantity is 1, just close the modal
-            if (typeof setCartBadge === 'function') {
-              setCartBadge(response.data.cart.products_count);
-            }
-            const modal = document.querySelector('.quick-view-modal');
-            if (modal) {
-              modal.remove();
-            }
+          if (typeof setCartBadge === 'function') {
+            setCartBadge(response.data.cart.products_count);
+          }
+          
+          // If we need to update the cart view
+          if (typeof cartProductsHtmlChanged === 'function' && response.data.cart_html) {
+            cartProductsHtmlChanged(response.data.cart_html, response.data.cart);
+          }
+          
+          // Close modal
+          const modal = document.querySelector('.quick-view-modal');
+          if (modal) {
+            modal.remove();
           }
         } else {
           console.error('Add to cart failed:', response);
