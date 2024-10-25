@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.7.3
+// src/scripts/quickView.js v1.7.4
 
 (function() {
   console.log('Quick View script initialized');
@@ -226,11 +226,15 @@
 
     if (selectedVariant) {
       // Update product ID input
-      const productIdInput = form.querySelector('input[name="product_id"]');
-      if (productIdInput) {
-        productIdInput.value = selectedVariant.id;
-        console.log('Updated product ID to:', selectedVariant.id);
+      let productIdInput = form.querySelector('input[name="product_id"]');
+      if (!productIdInput) {
+        productIdInput = document.createElement('input');
+        productIdInput.type = 'hidden';
+        productIdInput.name = 'product_id';
+        form.appendChild(productIdInput);
       }
+      productIdInput.value = selectedVariant.id;
+      console.log('Updated product ID to:', selectedVariant.id);
 
       // Update price display
       const priceElement = form.querySelector('#product-price');
@@ -271,6 +275,18 @@
     const currentLang = getCurrentLanguage();
     const form = document.getElementById('product-form');
     
+    // Get the quantity from the input
+    const quantityInput = form.querySelector('#product-quantity-input');
+    const quantity = quantityInput ? parseInt(quantityInput.value) : 1;
+    
+    if (isNaN(quantity) || quantity < 1) {
+      const message = currentLang === 'ar' 
+        ? 'الرجاء إدخال كمية صحيحة'
+        : 'Please enter a valid quantity';
+      alert(message);
+      return;
+    }
+    
     // Check if product has variants
     if (productData.variants && productData.variants.length > 0) {
       console.log('Product has variants:', productData.variants);
@@ -286,7 +302,7 @@
         }
         selectedVariants[labelText] = select.value;
       });
-
+  
       // Check if all variants are selected
       if (missingSelections.length > 0) {
         const message = currentLang === 'ar' 
@@ -295,9 +311,9 @@
         alert(message);
         return;
       }
-
+  
       console.log('Selected variants:', selectedVariants);
-
+  
       // Find the matching variant
       const selectedVariant = productData.variants.find(variant => {
         return variant.attributes.every(attr => {
@@ -305,7 +321,7 @@
           return selectedVariants[attrLabel] === attr.value[currentLang];
         });
       });
-
+  
       if (!selectedVariant) {
         console.error('No matching variant found');
         console.log('Selected combinations:', selectedVariants);
@@ -315,40 +331,47 @@
         alert(message);
         return;
       }
-
+  
       console.log('Found matching variant:', selectedVariant);
     }
-
-    // Get the quantity value
-    const visibleQuantityInput = form.querySelector('input[name="quantity"]');
-    const quantity = parseInt(visibleQuantityInput.value);
-    
-    if (isNaN(quantity) || quantity < 1) {
-      const message = currentLang === 'ar' 
-        ? 'الرجاء إدخال كمية صحيحة'
-        : 'Please enter a valid quantity';
-      alert(message);
-      return;
+  
+    // Ensure required hidden inputs exist and are populated
+    let productIdInput = form.querySelector('input[name="product_id"]');
+    if (!productIdInput) {
+      productIdInput = document.createElement('input');
+      productIdInput.type = 'hidden';
+      productIdInput.name = 'product_id';
+      form.appendChild(productIdInput);
     }
-
+    productIdInput.value = form.querySelector('#product-id').value;
+  
+    let quantityFormInput = form.querySelector('input[name="quantity"]');
+    if (!quantityFormInput) {
+      quantityFormInput = document.createElement('input');
+      quantityFormInput.type = 'hidden';
+      quantityFormInput.name = 'quantity';
+      form.appendChild(quantityFormInput);
+    }
+    quantityFormInput.value = quantity.toString();
+  
     // Show loading spinner
     const loadingSpinners = document.querySelectorAll('.add-to-cart-progress');
     loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
-
-    // Get the form data
+  
+    // Log the form data before submission
     const formData = new FormData(form);
     console.log('Form data being submitted:', {
       product_id: formData.get('product_id'),
       quantity: formData.get('quantity')
     });
-
+  
     // Call Zid's cart function
     try {
       zid.store.cart.addProduct({ 
         formId: 'product-form',
         data: {
           product_id: formData.get('product_id'),
-          quantity: formData.get('quantity')
+          quantity: quantity
         }
       })
       .then(function (response) {
@@ -386,6 +409,133 @@
       loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
     }
   }
+  
+  function createQuantitySelector() {
+    const currentLang = getCurrentLanguage();
+    
+    const quantityContainer = document.createElement('div');
+    quantityContainer.style.cssText = `
+      margin-top: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    `;
+  
+    const quantityLabel = document.createElement('label');
+    quantityLabel.htmlFor = 'product-quantity-input';
+    quantityLabel.textContent = currentLang === 'ar' ? 'الكمية:' : 'Quantity:';
+    quantityLabel.style.cssText = `
+      font-weight: bold;
+      min-width: 70px;
+    `;
+  
+    const quantityWrapper = document.createElement('div');
+    quantityWrapper.style.cssText = `
+      display: flex;
+      align-items: center;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      overflow: hidden;
+    `;
+  
+    const decreaseBtn = document.createElement('button');
+    decreaseBtn.type = 'button';
+    decreaseBtn.textContent = '-';
+    decreaseBtn.style.cssText = `
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: #f5f5f5;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+  
+    const quantityInput = document.createElement('input');
+    quantityInput.type = 'number';
+    quantityInput.id = 'product-quantity-input';
+    quantityInput.name = 'quantity';
+    quantityInput.value = '1';
+    quantityInput.min = '1';
+    quantityInput.style.cssText = `
+      width: 50px;
+      height: 36px;
+      border: none;
+      border-left: 1px solid #ddd;
+      border-right: 1px solid #ddd;
+      text-align: center;
+      -moz-appearance: textfield;
+    `;
+  
+    // Remove spinner arrows for number input
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = `
+      #product-quantity-input::-webkit-outer-spin-button,
+      #product-quantity-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+    `;
+    document.head.appendChild(styleSheet);
+  
+    const increaseBtn = document.createElement('button');
+    increaseBtn.type = 'button';
+    increaseBtn.textContent = '+';
+    increaseBtn.style.cssText = `
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: #f5f5f5;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+  
+    // Add event listeners
+    decreaseBtn.addEventListener('click', () => {
+      const currentValue = parseInt(quantityInput.value);
+      if (currentValue > 1) {
+        quantityInput.value = currentValue - 1;
+        updateHiddenQuantityInput();
+      }
+    });
+  
+    increaseBtn.addEventListener('click', () => {
+      const currentValue = parseInt(quantityInput.value);
+      quantityInput.value = currentValue + 1;
+      updateHiddenQuantityInput();
+    });
+  
+    quantityInput.addEventListener('change', () => {
+      let value = parseInt(quantityInput.value);
+      if (isNaN(value) || value < 1) {
+        value = 1;
+      }
+      quantityInput.value = value;
+      updateHiddenQuantityInput();
+    });
+  
+    function updateHiddenQuantityInput() {
+      const hiddenQuantityInput = form.querySelector('input[name="quantity"]');
+      if (hiddenQuantityInput) {
+        hiddenQuantityInput.value = quantityInput.value;
+      }
+    }
+  
+    quantityWrapper.appendChild(decreaseBtn);
+    quantityWrapper.appendChild(quantityInput);
+    quantityWrapper.appendChild(increaseBtn);
+  
+    quantityContainer.appendChild(quantityLabel);
+    quantityContainer.appendChild(quantityWrapper);
+  
+    return quantityContainer;
+  }
+
 
   function displayQuickViewModal(productData) {
     const currentLang = getCurrentLanguage();
@@ -481,102 +631,9 @@
       const variantsSection = createVariantsSection(productData);
       details.appendChild(variantsSection);
     }
-
-    // Add quantity selector
-    const quantityContainer = document.createElement('div');
-    quantityContainer.style.cssText = `
-      margin: 15px 0;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    `;
-
-    const quantityLabel = document.createElement('label');
-    quantityLabel.textContent = currentLang === 'ar' ? 'الكمية:' : 'Quantity:';
-    quantityLabel.style.cssText = `
-      font-weight: bold;
-      color: #333;
-    `;
-
-    const quantityWrapper = document.createElement('div');
-    quantityWrapper.style.cssText = `
-      display: flex;
-      align-items: center;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    `;
-
-    const decreaseBtn = document.createElement('button');
-    decreaseBtn.type = 'button';
-    decreaseBtn.textContent = '-';
-    decreaseBtn.style.cssText = `
-      padding: 5px 10px;
-      border: none;
-      background: #f5f5f5;
-      cursor: pointer;
-      font-size: 16px;
-      color: #333;
-      border-right: 1px solid #ddd;
-    `;
-
-    const visibleQuantityInput = document.createElement('input');
-    visibleQuantityInput.type = 'number';
-    visibleQuantityInput.name = 'quantity';
-    visibleQuantityInput.value = '1';
-    visibleQuantityInput.min = '1';
-    visibleQuantityInput.style.cssText = `
-      width: 50px;
-      padding: 5px;
-      border: none;
-      text-align: center;
-      -moz-appearance: textfield;
-    `;
-    // Remove spinner buttons from number input
-    visibleQuantityInput.addEventListener('mousewheel', (e) => e.preventDefault());
-
-    const increaseBtn = document.createElement('button');
-    increaseBtn.type = 'button';
-    increaseBtn.textContent = '+';
-    increaseBtn.style.cssText = `
-      padding: 5px 10px;
-      border: none;
-      background: #f5f5f5;
-      cursor: pointer;
-      font-size: 16px;
-      color: #333;
-      border-left: 1px solid #ddd;
-    `;
-
-    // Add event listeners for quantity buttons
-    decreaseBtn.addEventListener('click', () => {
-      const currentValue = parseInt(visibleQuantityInput.value);
-      if (currentValue > 1) {
-        visibleQuantityInput.value = currentValue - 1;
-      }
-    });
-
-    increaseBtn.addEventListener('click', () => {
-      const currentValue = parseInt(visibleQuantityInput.value);
-      visibleQuantityInput.value = currentValue + 1;
-    });
-
-    // Prevent invalid input
-    visibleQuantityInput.addEventListener('input', () => {
-      const value = parseInt(visibleQuantityInput.value);
-      if (isNaN(value) || value < 1) {
-        visibleQuantityInput.value = 1;
-      }
-    });
-
-    quantityWrapper.appendChild(decreaseBtn);
-    quantityWrapper.appendChild(visibleQuantityInput);
-    quantityWrapper.appendChild(increaseBtn);
+    const quantitySelector = createQuantitySelector();
+    details.appendChild(quantitySelector);
     
-    quantityContainer.appendChild(quantityLabel);
-    quantityContainer.appendChild(quantityWrapper);
-    
-    details.appendChild(quantityContainer);
-
     // Add description
     if (productData.description && productData.description[currentLang]) {
       const description = document.createElement('p');
@@ -598,6 +655,139 @@
     productIdInput.name = 'product_id';
     productIdInput.value = productData.id;
     form.appendChild(productIdInput);
+
+    const quantityInput = document.createElement('input');
+    quantityInput.type = 'hidden';
+    quantityInput.id = 'product-quantity';
+    quantityInput.name = 'quantity';
+    quantityInput.value = '1';
+    form.appendChild(quantityInput);
+
+// Add quantity selector
+function createQuantitySelector() {
+  const currentLang = getCurrentLanguage();
+  
+  const quantityContainer = document.createElement('div');
+  quantityContainer.style.cssText = `
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  `;
+
+  const quantityLabel = document.createElement('label');
+  quantityLabel.htmlFor = 'product-quantity-input';
+  quantityLabel.textContent = currentLang === 'ar' ? 'الكمية:' : 'Quantity:';
+  quantityLabel.style.cssText = `
+    font-weight: bold;
+    min-width: 70px;
+  `;
+
+  const quantityWrapper = document.createElement('div');
+  quantityWrapper.style.cssText = `
+    display: flex;
+    align-items: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+  `;
+
+  const decreaseBtn = document.createElement('button');
+  decreaseBtn.type = 'button';
+  decreaseBtn.textContent = '-';
+  decreaseBtn.style.cssText = `
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: #f5f5f5;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  `;
+
+  const quantityInput = document.createElement('input');
+  quantityInput.type = 'number';
+  quantityInput.id = 'product-quantity-input';
+  quantityInput.name = 'quantity';
+  quantityInput.value = '1';
+  quantityInput.min = '1';
+  quantityInput.style.cssText = `
+    width: 50px;
+    height: 36px;
+    border: none;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+    text-align: center;
+    -moz-appearance: textfield;
+  `;
+  // Remove spinner arrows for number input
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = `
+    #product-quantity-input::-webkit-outer-spin-button,
+    #product-quantity-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  `;
+  document.head.appendChild(styleSheet);
+
+  const increaseBtn = document.createElement('button');
+  increaseBtn.type = 'button';
+  increaseBtn.textContent = '+';
+  increaseBtn.style.cssText = `
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: #f5f5f5;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  `;
+
+  // Add event listeners
+  decreaseBtn.addEventListener('click', () => {
+    const currentValue = parseInt(quantityInput.value);
+    if (currentValue > 1) {
+      quantityInput.value = currentValue - 1;
+      updateHiddenQuantityInput();
+    }
+  });
+
+  increaseBtn.addEventListener('click', () => {
+    const currentValue = parseInt(quantityInput.value);
+    quantityInput.value = currentValue + 1;
+    updateHiddenQuantityInput();
+  });
+
+  quantityInput.addEventListener('change', () => {
+    let value = parseInt(quantityInput.value);
+    if (isNaN(value) || value < 1) {
+      value = 1;
+    }
+    quantityInput.value = value;
+    updateHiddenQuantityInput();
+  });
+
+  function updateHiddenQuantityInput() {
+    const hiddenQuantityInput = form.querySelector('input[name="quantity"]');
+    if (hiddenQuantityInput) {
+      hiddenQuantityInput.value = quantityInput.value;
+    }
+  }
+
+  quantityWrapper.appendChild(decreaseBtn);
+  quantityWrapper.appendChild(quantityInput);
+  quantityWrapper.appendChild(increaseBtn);
+
+  quantityContainer.appendChild(quantityLabel);
+  quantityContainer.appendChild(quantityWrapper);
+
+  return quantityContainer;
+}
 
     // Add buttons container
     const buttonsContainer = document.createElement('div');
