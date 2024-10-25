@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.7.6
+// src/scripts/quickView.js v1.7.7
 
 (function() {
   console.log('Quick View script initialized');
@@ -344,47 +344,98 @@
     const loadingSpinners = document.querySelectorAll('.add-to-cart-progress');
     loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
   
+    // Prepare form data
+    const productId = form.querySelector('input[name="product_id"]').value;
+    console.log('Adding product with ID:', productId, 'and quantity:', quantity);
+  
     try {
-      // Add to cart with the selected quantity directly
+      // Add to cart using Zid's cart API
       zid.store.cart.addProduct({
         formId: 'product-form',
         data: {
-          product_id: form.querySelector('input[name="product_id"]').value,
-          quantity: quantity // Use the selected quantity directly
-        }
-      }).then(function (response) {
-        console.log('Add to cart response:', response);
-        if (response.status === 'success') {
-          if (typeof setCartBadge === 'function') {
-            setCartBadge(response.data.cart.products_count);
-          }
+          product_id: productId,
+          quantity: 1
+        },
+        success: function(response) {
+          console.log('Initial add to cart response:', response);
           
-          // If we need to update the cart view
-          if (typeof cartProductsHtmlChanged === 'function' && response.data.cart_html) {
-            cartProductsHtmlChanged(response.data.cart_html, response.data.cart);
+          if (response.status === 'success' && response.data.cart.products.length > 0) {
+            // Find the added product in the cart
+            const addedProduct = response.data.cart.products.find(p => p.product_id === productId);
+            
+            if (addedProduct && quantity > 1) {
+              console.log('Updating quantity for cart item:', addedProduct.id);
+              
+              // Use Zid's cart update function
+              cart.updateProductQuantity(addedProduct.id, quantity, function(updateResponse) {
+                console.log('Quantity update response:', updateResponse);
+                
+                if (updateResponse.status === 'success') {
+                  // Update cart badge if function exists
+                  if (typeof setCartBadge === 'function') {
+                    setCartBadge(updateResponse.cart.products_count);
+                  }
+  
+                  // Update cart HTML if function exists
+                  if (typeof cartProductsHtmlChanged === 'function' && updateResponse.cart_html) {
+                    cartProductsHtmlChanged(updateResponse.cart_html, updateResponse.cart);
+                  }
+  
+                  // Reset cart HTML
+                  const cartProductsList = document.querySelector('.template_for_cart_products_list');
+                  if (cartProductsList && updateResponse.cart_html) {
+                    cartProductsList.innerHTML = updateResponse.cart_html;
+                  }
+  
+                  // Close modal
+                  const modal = document.querySelector('.quick-view-modal');
+                  if (modal) {
+                    modal.remove();
+                  }
+                } else {
+                  console.error('Failed to update quantity:', updateResponse);
+                  const errorMessage = currentLang === 'ar'
+                    ? 'فشل تحديث الكمية'
+                    : 'Failed to update quantity';
+                  alert(errorMessage);
+                }
+              });
+            } else {
+              // For quantity 1, just close the modal
+              if (typeof setCartBadge === 'function') {
+                setCartBadge(response.data.cart.products_count);
+              }
+  
+              // Update cart HTML if function exists
+              if (typeof cartProductsHtmlChanged === 'function' && response.data.cart_html) {
+                cartProductsHtmlChanged(response.data.cart_html, response.data.cart);
+              }
+  
+              // Close modal
+              const modal = document.querySelector('.quick-view-modal');
+              if (modal) {
+                modal.remove();
+              }
+            }
+          } else {
+            console.error('Add to cart failed:', response);
+            const errorMessage = currentLang === 'ar'
+              ? response.data.message || 'فشل إضافة المنتج إلى السلة'
+              : response.data.message || 'Failed to add product to cart';
+            alert(errorMessage);
           }
-          
-          // Close modal
-          const modal = document.querySelector('.quick-view-modal');
-          if (modal) {
-            modal.remove();
-          }
-        } else {
-          console.error('Add to cart failed:', response);
+        },
+        error: function(error) {
+          console.error('Error adding to cart:', error);
           const errorMessage = currentLang === 'ar'
-            ? response.data.message || 'فشل إضافة المنتج إلى السلة'
-            : response.data.message || 'Failed to add product to cart';
+            ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
+            : 'Error occurred while adding product to cart';
           alert(errorMessage);
+        },
+        complete: function() {
+          // Hide loading spinner
+          loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
         }
-      }).catch(function(error) {
-        console.error('Error adding to cart:', error);
-        const errorMessage = currentLang === 'ar'
-          ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
-          : 'Error occurred while adding product to cart';
-        alert(errorMessage);
-      }).finally(function() {
-        // Hide loading spinner
-        loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
       });
     } catch (error) {
       console.error('Critical error in add to cart:', error);
