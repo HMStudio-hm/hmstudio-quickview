@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.8.9
+// src/scripts/quickView.js v1.9.0
 
 (function() {
   console.log('Quick View script initialized');
@@ -289,6 +289,8 @@
       return;
     }
     
+    let productId = productData.id;
+  
     // Check if product has variants
     if (productData.variants && productData.variants.length > 0) {
       console.log('Product has variants:', productData.variants);
@@ -335,35 +337,25 @@
       }
   
       console.log('Found matching variant:', selectedVariant);
-      
-      // Update product ID for variant
-      const productIdInput = form.querySelector('input[name="product_id"]');
-      if (productIdInput) {
-        productIdInput.value = selectedVariant.id;
-        console.log('Updated product ID to variant ID:', selectedVariant.id);
-      }
+      productId = selectedVariant.id;
     }
   
     // Show loading spinner
     const loadingSpinners = document.querySelectorAll('.add-to-cart-progress');
     loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
   
-    // Update the hidden quantity input
-    const hiddenQuantityInput = form.querySelector('input[name="quantity"]');
-    if (hiddenQuantityInput) {
-      hiddenQuantityInput.value = quantity.toString();
-    }
-  
-    // Log what we're about to submit
-    console.log('Sending cart data:', {
-      product_id: form.querySelector('input[name="product_id"]').value,
+    // Prepare cart data
+    const cartData = {
+      product_id: productId,
       quantity: quantity
-    });
+    };
   
-    // Call Zid's cart function
+    console.log('Sending cart data:', cartData);
+  
+    // Call Zid's cart function with explicit data
     try {
-      zid.store.cart.addProduct({
-        formId: 'product-form'  // Changed to only use formId
+      zid.store.cart.add({ 
+        params: cartData
       })
       .then(function (response) {
         console.log('Add to cart response:', response);
