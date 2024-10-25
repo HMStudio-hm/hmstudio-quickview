@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.8.3
+// src/scripts/quickView.js v1.8.4
 
 (function() {
   console.log('Quick View script initialized');
@@ -342,18 +342,20 @@
     const loadingSpinners = document.querySelectorAll('.add-to-cart-progress');
     loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
   
-    // Create an object with the product data
-    const formData = {
-      product_id: form.querySelector('input[name="product_id"]').value,
-      quantity: quantity
-    };
+    // Get the product ID
+    const productId = form.querySelector('input[name="product_id"]').value;
   
-    console.log('Adding to cart with data:', formData);
+    console.log('Adding to cart with data:', { product_id: productId, quantity: quantity });
   
-    // Use Zid's addProduct function
+    // Use Zid's specific formData structure
+    const formData = new FormData();
+    formData.append('product_id', productId);
+    formData.append('quantity', quantity);
+    
     try {
       window.zid.store.cart.addProduct({
-        data: formData,
+        formId: 'product-form',
+        formData: formData,
         success: function(response) {
           console.log('Add to cart response:', response);
           
@@ -364,14 +366,14 @@
               modal.remove();
             }
   
-            // Update cart HTML using Zid's function
-            if (typeof window.cartProductsHtmlChanged === 'function' && response.data.cart_html) {
-              window.cartProductsHtmlChanged(response.data.cart_html, response.data.cart);
+            // Update cart badge if the function exists
+            if (typeof window.setCartBadge === 'function' && response.data && response.data.cart) {
+              window.setCartBadge(response.data.cart.products_count);
             }
   
-            // Update cart badge if the function exists
-            if (typeof window.setCartBadge === 'function') {
-              window.setCartBadge(response.data.cart.products_count);
+            // Update cart HTML using Zid's function
+            if (typeof window.cartProductsHtmlChanged === 'function' && response.data && response.data.cart_html) {
+              window.cartProductsHtmlChanged(response.data.cart_html, response.data.cart);
             }
           } else {
             console.error('Add to cart failed:', response);
