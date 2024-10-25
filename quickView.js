@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.8.4
+// src/scripts/quickView.js v1.8.5
 
 (function() {
   console.log('Quick View script initialized');
@@ -347,25 +347,30 @@
   
     console.log('Adding to cart with data:', { product_id: productId, quantity: quantity });
   
-    // Use Zid's specific formData structure
-    const formData = new FormData();
-    formData.append('product_id', productId);
-    formData.append('quantity', quantity);
+    // Create the form data with the correct quantity
+    const formData = new FormData(form);
+    formData.set('product_id', productId);
+    formData.set('quantity', quantity.toString());
+  
+    // Disable the add to cart button to prevent double clicks
+    const addToCartBtn = form.querySelector('.add-to-cart-btn');
+    if (addToCartBtn) {
+      addToCartBtn.disabled = true;
+    }
     
     try {
+      // Convert FormData to a plain object that Zid expects
+      const cartData = {
+        product_id: formData.get('product_id'),
+        quantity: parseInt(formData.get('quantity'))
+      };
+  
       window.zid.store.cart.addProduct({
-        formId: 'product-form',
-        formData: formData,
+        data: cartData, // Send as plain object
         success: function(response) {
           console.log('Add to cart response:', response);
           
-          if (response.status === 'success') {
-            // Close modal first
-            const modal = document.querySelector('.quick-view-modal');
-            if (modal) {
-              modal.remove();
-            }
-  
+          if (response.status === 'success' || (response.data && response.data.status === 'success')) {
             // Update cart badge if the function exists
             if (typeof window.setCartBadge === 'function' && response.data && response.data.cart) {
               window.setCartBadge(response.data.cart.products_count);
@@ -375,7 +380,18 @@
             if (typeof window.cartProductsHtmlChanged === 'function' && response.data && response.data.cart_html) {
               window.cartProductsHtmlChanged(response.data.cart_html, response.data.cart);
             }
+  
+            // Close modal last, after all updates are done
+            const modal = document.querySelector('.quick-view-modal');
+            if (modal) {
+              modal.remove();
+            }
           } else {
+            // Re-enable the add to cart button on failure
+            if (addToCartBtn) {
+              addToCartBtn.disabled = false;
+            }
+            
             console.error('Add to cart failed:', response);
             const errorMessage = currentLang === 'ar'
               ? response.data.message || 'فشل إضافة المنتج إلى السلة'
@@ -385,6 +401,12 @@
         },
         error: function(error) {
           console.error('Error adding to cart:', error);
+          
+          // Re-enable the add to cart button on error
+          if (addToCartBtn) {
+            addToCartBtn.disabled = false;
+          }
+          
           const errorMessage = currentLang === 'ar'
             ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
             : 'Error occurred while adding product to cart';
@@ -393,11 +415,23 @@
         complete: function() {
           // Hide loading spinner
           loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
+          
+          // Re-enable the add to cart button
+          if (addToCartBtn) {
+            addToCartBtn.disabled = false;
+          }
         }
       });
     } catch (error) {
       console.error('Critical error in add to cart:', error);
+      
+      // Hide loading spinner
       loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
+      
+      // Re-enable the add to cart button
+      if (addToCartBtn) {
+        addToCartBtn.disabled = false;
+      }
       
       const errorMessage = currentLang === 'ar'
         ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
