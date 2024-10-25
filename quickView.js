@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.7.9
+// src/scripts/quickView.js v1.8.0
 
 (function() {
   console.log('Quick View script initialized');
@@ -287,93 +287,50 @@
       return;
     }
   
-    // Check if product has variants
-    if (productData.variants && productData.variants.length > 0) {
-      console.log('Product has variants:', productData.variants);
-      
-      // Get all variant selections
-      const selectedVariants = {};
-      const missingSelections = [];
-      
-      form.querySelectorAll('.variant-select').forEach(select => {
-        const labelText = select.previousElementSibling.textContent;
-        if (!select.value) {
-          missingSelections.push(labelText);
-        }
-        selectedVariants[labelText] = select.value;
-      });
-  
-      // Check if all variants are selected
-      if (missingSelections.length > 0) {
-        const message = currentLang === 'ar' 
-          ? `الرجاء اختيار ${missingSelections.join(', ')}`
-          : `Please select ${missingSelections.join(', ')}`;
-        alert(message);
-        return;
-      }
-  
-      console.log('Selected variants:', selectedVariants);
-  
-      // Find the matching variant
-      const selectedVariant = productData.variants.find(variant => {
-        return variant.attributes.every(attr => {
-          const attrLabel = currentLang === 'ar' ? attr.slug : attr.name;
-          return selectedVariants[attrLabel] === attr.value[currentLang];
-        });
-      });
-  
-      if (!selectedVariant) {
-        console.error('No matching variant found');
-        const message = currentLang === 'ar' 
-          ? 'هذا المنتج غير متوفر بالمواصفات المختارة'
-          : 'This product variant is not available';
-        alert(message);
-        return;
-      }
-  
-      console.log('Found matching variant:', selectedVariant);
-      
-      // Set the product ID to the selected variant
-      const productIdInput = form.querySelector('input[name="product_id"]');
-      if (productIdInput) {
-        productIdInput.value = selectedVariant.id;
-      }
-    }
-  
     // Show loading spinner
     const loadingSpinners = document.querySelectorAll('.add-to-cart-progress');
     loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
   
     try {
-      // Get the product ID
-      const productId = form.querySelector('input[name="product_id"]').value;
-      
-      // Use Zid's store cart function instead
+      // First add product with quantity = 1
       zid.store.cart.addProduct({
         formId: 'product-form',
         data: {
-          product_id: productId,
-          quantity: quantity  // Send the quantity directly
+          product_id: form.querySelector('input[name="product_id"]').value,
+          quantity: 1
         },
         success: function(response) {
-          console.log('Add to cart response:', response);
-          
           if (response.status === 'success') {
-            // Update cart badge if function exists
-            if (typeof setCartBadge === 'function') {
-              setCartBadge(response.data.cart.products_count);
+            // If quantity is more than 1, update using the cart update mechanism
+            if (quantity > 1) {
+              // Find the added product in the cart
+              const addedProduct = response.data.cart.products.find(
+                p => p.id === response.data.cart.products[response.data.cart.products.length - 1].id
+              );
+              
+              if (addedProduct) {
+                // Trigger cart quantity update
+                const quantitySelect = document.querySelector(
+                  `.cart-product-quantity-dropdown select[data-product-id="${addedProduct.id}"]`
+                );
+                
+                if (quantitySelect) {
+                  // Update the select value which will trigger the cart update
+                  quantitySelect.value = quantity;
+                  // Trigger the change event
+                  const event = new Event('change', { bubbles: true });
+                  quantitySelect.dispatchEvent(event);
+                }
+              }
             }
-            
-            // Update cart HTML if function exists
-            if (typeof cartProductsHtmlChanged === 'function' && response.data.cart_html) {
-              cartProductsHtmlChanged(response.data.cart_html, response.data.cart);
-            }
-            
+  
             // Close modal
             const modal = document.querySelector('.quick-view-modal');
             if (modal) {
               modal.remove();
             }
+  
+            // The cart HTML will be automatically updated by Zid's cartProductsHtmlChanged
           } else {
             console.error('Add to cart failed:', response);
             const errorMessage = currentLang === 'ar'
@@ -394,11 +351,9 @@
           loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
         }
       });
-      
     } catch (error) {
       console.error('Critical error in add to cart:', error);
       loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
-      
       const errorMessage = currentLang === 'ar'
         ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
         : 'Error occurred while adding product to cart';
