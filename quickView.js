@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.8.6
+// src/scripts/quickView.js v1.8.7
 
 (function() {
   console.log('Quick View script initialized');
@@ -335,44 +335,22 @@
       console.log('Found matching variant:', selectedVariant);
     }
   
-    // Ensure required hidden inputs exist and are populated
-    let productIdInput = form.querySelector('input[name="product_id"]');
-    if (!productIdInput) {
-      productIdInput = document.createElement('input');
-      productIdInput.type = 'hidden';
-      productIdInput.name = 'product_id';
-      form.appendChild(productIdInput);
-    }
-    productIdInput.value = form.querySelector('#product-id').value;
-  
-    let quantityFormInput = form.querySelector('input[name="quantity"]');
-    if (!quantityFormInput) {
-      quantityFormInput = document.createElement('input');
-      quantityFormInput.type = 'hidden';
-      quantityFormInput.name = 'quantity';
-      form.appendChild(quantityFormInput);
-    }
-    quantityFormInput.value = quantity.toString();
-  
     // Show loading spinner
     const loadingSpinners = document.querySelectorAll('.add-to-cart-progress');
     loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
   
-    // Log the form data before submission
-    const formData = new FormData(form);
-    console.log('Form data being submitted:', {
-      product_id: formData.get('product_id'),
-      quantity: formData.get('quantity')
-    });
+    // Prepare the data for Zid's cart API
+    const cartData = {
+      product_id: form.querySelector('#product-id').value,
+      quantity: quantity.toString() // Convert quantity to string to ensure proper serialization
+    };
   
-    // Call Zid's cart function
+    console.log('Sending cart data:', cartData);
+  
+    // Call Zid's cart function with explicit data
     try {
-      zid.store.cart.addProduct({ 
-        formId: 'product-form',
-        data: {
-          product_id: formData.get('product_id'),
-          quantity: quantity
-        }
+      zid.store.cart.addProduct({
+        data: cartData // Send data directly without formId
       })
       .then(function (response) {
         console.log('Add to cart response:', response);
@@ -500,14 +478,12 @@
       const currentValue = parseInt(quantityInput.value);
       if (currentValue > 1) {
         quantityInput.value = currentValue - 1;
-        updateHiddenQuantityInput();
       }
     });
   
     increaseBtn.addEventListener('click', () => {
       const currentValue = parseInt(quantityInput.value);
       quantityInput.value = currentValue + 1;
-      updateHiddenQuantityInput();
     });
   
     quantityInput.addEventListener('change', () => {
@@ -516,15 +492,7 @@
         value = 1;
       }
       quantityInput.value = value;
-      updateHiddenQuantityInput();
     });
-  
-    function updateHiddenQuantityInput() {
-      const hiddenQuantityInput = form.querySelector('input[name="quantity"]');
-      if (hiddenQuantityInput) {
-        hiddenQuantityInput.value = quantityInput.value;
-      }
-    }
   
     quantityWrapper.appendChild(decreaseBtn);
     quantityWrapper.appendChild(quantityInput);
