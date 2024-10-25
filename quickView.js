@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.9.1
+// src/scripts/quickView.js v1.9.2
 
 (function() {
   console.log('Quick View script initialized');
@@ -344,44 +344,60 @@
       }
     }
   
-    // Update the hidden quantity input before form submission
-    const hiddenQuantityInput = form.querySelector('input[name="quantity"]');
-    if (hiddenQuantityInput) {
-      hiddenQuantityInput.value = quantity.toString();
-    }
-  
     // Show loading spinner
     const loadingSpinners = document.querySelectorAll('.add-to-cart-progress');
     loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
   
-    // Call Zid's cart function
-    try {
-      zid.store.cart.addProduct({
-        formId: 'product-form',
-        afterAddCallback: function(response) {
-          console.log('Add to cart response:', response);
+    // Get the product ID
+    const productId = form.querySelector('input[name="product_id"]').value;
+  
+    // Create the XMLHttpRequest object
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/cart', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+  
+    // Prepare the data
+    const data = new URLSearchParams({
+      'product_id': productId,
+      'quantity': quantity,
+      '_token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    }).toString();
+  
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          console.log('Cart response:', response);
+          
           if (response.status === 'success') {
-            // Update cart display using Zid's cartProductsHtmlChanged
-            if (typeof cartProductsHtmlChanged === 'function') {
-              const cartHtml = response.data.cart_html || '';
-              cartProductsHtmlChanged(cartHtml, response.data.cart);
-            }
-            
-            // Update cart badge if the function exists
+            // Update cart count if the function exists
             if (typeof setCartBadge === 'function') {
               setCartBadge(response.data.cart.products_count);
             }
   
             // Update cart template if it exists
-            const cartTemplate = document.querySelector('.template_for_cart_products_list');
-            if (cartTemplate && response.data.cart_html) {
-              cartTemplate.innerHTML = response.data.cart_html;
+            if (response.data.cart_html) {
+              const cartTemplate = document.querySelector('.template_for_cart_products_list');
+              if (cartTemplate) {
+                cartTemplate.innerHTML = response.data.cart_html;
+              }
             }
   
             // Close modal
             const modal = document.querySelector('.quick-view-modal');
             if (modal) {
               modal.remove();
+            }
+  
+            // Trigger cart update event
+            if (typeof cartProductsHtmlChanged === 'function' && response.data.cart_html) {
+              cartProductsHtmlChanged(response.data.cart_html, response.data.cart);
+            }
+  
+            // Refresh the page to show updated cart (if needed)
+            if (window.location.pathname === '/cart') {
+              window.location.reload();
             }
           } else {
             console.error('Add to cart failed:', response);
@@ -390,15 +406,29 @@
               : response.data.message || 'Failed to add product to cart';
             alert(errorMessage);
           }
-  
-          // Hide loading spinner
-          loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
+        } catch (error) {
+          console.error('Error parsing response:', error);
         }
-      });
-    } catch (error) {
-      console.error('Critical error in add to cart:', error);
+      } else {
+        console.error('Request failed:', xhr.status);
+      }
+  
+      // Hide loading spinner
       loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
-    }
+    };
+  
+    xhr.onerror = function() {
+      console.error('Request failed');
+      const errorMessage = currentLang === 'ar' 
+        ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
+        : 'Error occurred while adding product to cart';
+      alert(errorMessage);
+      loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
+    };
+  
+    // Send the request
+    console.log('Sending cart data:', data);
+    xhr.send(data);
   }
   
   function createQuantitySelector() {
