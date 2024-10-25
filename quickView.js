@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.8.8
+// src/scripts/quickView.js v1.8.9
 
 (function() {
   console.log('Quick View script initialized');
@@ -344,22 +344,26 @@
       }
     }
   
-    // Create the cart data object
-    const cartData = {
-      product_id: form.querySelector('input[name="product_id"]').value,
-      quantity: quantity
-    };
-  
-    console.log('Sending cart data:', cartData);
-  
     // Show loading spinner
     const loadingSpinners = document.querySelectorAll('.add-to-cart-progress');
     loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
   
-    // Call Zid's cart function with the explicit data
+    // Update the hidden quantity input
+    const hiddenQuantityInput = form.querySelector('input[name="quantity"]');
+    if (hiddenQuantityInput) {
+      hiddenQuantityInput.value = quantity.toString();
+    }
+  
+    // Log what we're about to submit
+    console.log('Sending cart data:', {
+      product_id: form.querySelector('input[name="product_id"]').value,
+      quantity: quantity
+    });
+  
+    // Call Zid's cart function
     try {
       zid.store.cart.addProduct({
-        data: cartData
+        formId: 'product-form'  // Changed to only use formId
       })
       .then(function (response) {
         console.log('Add to cart response:', response);
