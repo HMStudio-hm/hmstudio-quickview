@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.9.3
+// src/scripts/quickView.js v1.9.4
 
 (function() {
   console.log('Quick View script initialized');
@@ -335,44 +335,40 @@
       console.log('Found matching variant:', selectedVariant);
     }
   
-    // Ensure required hidden inputs exist and are populated
-    let productIdInput = form.querySelector('input[name="product_id"]');
-    if (!productIdInput) {
-      productIdInput = document.createElement('input');
-      productIdInput.type = 'hidden';
-      productIdInput.name = 'product_id';
-      form.appendChild(productIdInput);
-    }
-    productIdInput.value = form.querySelector('#product-id').value;
+    // Create a new form element specifically for submission
+    const submitForm = document.createElement('form');
+    submitForm.id = 'submit-form';
+    submitForm.style.display = 'none';
+    document.body.appendChild(submitForm);
   
-    let quantityFormInput = form.querySelector('input[name="quantity"]');
-    if (!quantityFormInput) {
-      quantityFormInput = document.createElement('input');
-      quantityFormInput.type = 'hidden';
-      quantityFormInput.name = 'quantity';
-      form.appendChild(quantityFormInput);
-    }
+    // Add product_id input
+    const productIdInput = document.createElement('input');
+    productIdInput.type = 'hidden';
+    productIdInput.name = 'product_id';
+    productIdInput.value = form.querySelector('#product-id').value;
+    submitForm.appendChild(productIdInput);
+  
+    // Add quantity input
+    const quantityFormInput = document.createElement('input');
+    quantityFormInput.type = 'hidden';
+    quantityFormInput.name = 'quantity';
     quantityFormInput.value = quantity.toString();
+    submitForm.appendChild(quantityFormInput);
   
     // Show loading spinner
     const loadingSpinners = document.querySelectorAll('.add-to-cart-progress');
     loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
   
     // Log the form data before submission
-    const formData = new FormData(form);
     console.log('Form data being submitted:', {
-      product_id: formData.get('product_id'),
-      quantity: formData.get('quantity')
+      product_id: productIdInput.value,
+      quantity: quantityFormInput.value
     });
   
     // Call Zid's cart function
     try {
       zid.store.cart.addProduct({ 
-        formId: 'product-form',
-        data: {
-          product_id: formData.get('product_id'),
-          quantity: quantity
-        }
+        formId: 'submit-form'
       })
       .then(function (response) {
         console.log('Add to cart response:', response);
@@ -403,10 +399,13 @@
       .finally(function() {
         // Hide loading spinner
         loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
+        // Clean up the temporary form
+        submitForm.remove();
       });
     } catch (error) {
       console.error('Critical error in add to cart:', error);
       loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
+      submitForm.remove();
     }
   }
   
