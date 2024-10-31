@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.0.3
+// src/scripts/quickView.js v2.0.4
 
 (function() {
   console.log('Quick View script initialized');
@@ -858,11 +858,7 @@ buttonContainer.style.cssText = `
           // Insert before the first button in the container
           const firstButton = buttonContainer.querySelector('a, button');
           if (firstButton) {
-            if (config.quickViewStyle === 'left') {
-              buttonContainer.insertBefore(button, firstButton);
-            } else {
-              buttonContainer.insertBefore(button, firstButton.nextSibling);
-            }
+            buttonContainer.insertBefore(button, firstButton);
           } else {
             buttonContainer.appendChild(button);
           }
