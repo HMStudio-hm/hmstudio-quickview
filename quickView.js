@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v1.9.9
+// src/scripts/quickView.js v2.0.0
 
 (function() {
   console.log('Quick View script initialized');
@@ -791,90 +791,93 @@
     const productCards = document.querySelectorAll('.product-item.position-relative');
     console.log('Found product cards:', productCards.length);
     
-    // Store reference to this
-    const self = this;
-    
     productCards.forEach(card => {
       if (card.querySelector('.quick-view-btn')) {
         console.log('Quick View button already exists for a product, skipping');
         return;
       }
-  
+
       // Get product ID from data-wishlist-id
       const productId = card.querySelector('[data-wishlist-id]')?.getAttribute('data-wishlist-id');
       
       if (productId) {
         console.log('Found product ID:', productId);
         
-        // Find the button container
+        // Find the button container - it's the div with text-align: center
         const buttonContainer = card.querySelector('div[style*="text-align: center"]');
-        
-        if (buttonContainer) {
-          buttonContainer.style.cssText = `
-            text-align: center;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-          `;
+if (buttonContainer) {
+  // Update the button container styles to ensure horizontal alignment
+  buttonContainer.style.cssText = `
+    text-align: center;
+    display: inline-flex;  /* Changed to inline-flex */
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  `;
+
+  const button = document.createElement('button');
+  button.className = 'quick-view-btn';
+  button.style.cssText = `
+    width: 35px;
+    height: 35px;
+    padding: 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: inline-flex;  /* Changed to inline-flex */
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;  /* Added this */
+  `;
+
+  // Add eye icon using SVG
+  button.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+      <circle cx="12" cy="12" r="3"></circle>
+    </svg>
+  `;
+
+  // Store reference to openQuickView
+  const openQuickView = this.openQuickView.bind(this);  // Bind the context
+
+  button.addEventListener('click', (e) => {
+    e.preventDefault();
+    console.log('Quick View button clicked for product ID:', productId);
+    openQuickView(productId);  // Use the bound function
+  });
+
+  button.addEventListener('mouseover', () => {
+    button.style.backgroundColor = '#f0f0f0';
+  });
+
+  button.addEventListener('mouseout', () => {
+    button.style.backgroundColor = '#ffffff';
+  });
+
   
-          const button = document.createElement('button');
-          button.className = 'quick-view-btn';
-          button.style.cssText = `
-            width: 35px;
-            height: 35px;
-            padding: 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #ffffff;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            vertical-align: middle;
-          `;
-  
-          button.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-          `;
-  
-          button.addEventListener('mouseover', () => {
-            button.style.backgroundColor = '#f0f0f0';
-          });
-  
-          button.addEventListener('mouseout', () => {
-            button.style.backgroundColor = '#ffffff';
-          });
-  
-          button.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('Quick View button clicked for product ID:', productId);
-            self.openQuickView(productId);  // Use the stored reference
-          });
-  
-          // Get the add to cart button to match its height
-          const addToCartButton = buttonContainer.querySelector('.btn-product-card-select-variant');
-          if (addToCartButton) {
-            const buttonHeight = window.getComputedStyle(addToCartButton).height;
-            button.style.height = buttonHeight;
-          }
-  
-          // Insert button in the correct position
-          const firstButton = buttonContainer.querySelector('a, button');
-          if (firstButton) {
-            if (self.config.quickViewStyle === 'left') {
-              buttonContainer.insertBefore(button, firstButton);
-            } else {
-              buttonContainer.insertBefore(button, firstButton.nextSibling);
-            }
-          } else {
-            buttonContainer.appendChild(button);
-          }
-        }
+
+  // Get the add to cart button to match its height
+  const addToCartButton = buttonContainer.querySelector('.btn-product-card-select-variant');
+  if (addToCartButton) {
+    const buttonHeight = window.getComputedStyle(addToCartButton).height;
+    button.style.height = buttonHeight; // Match the height
+  }
+
+  // Insert button in the correct position
+  const firstButton = buttonContainer.querySelector('a, button');
+  if (firstButton) {
+    if (config.quickViewStyle === 'left') {
+      buttonContainer.insertBefore(button, firstButton);
+    } else {
+      buttonContainer.insertBefore(button, firstButton.nextSibling);
+    }
+  } else {
+    buttonContainer.appendChild(button);
+  }
+}
       }
     });
   }
