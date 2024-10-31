@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.0.2
+// src/scripts/quickView.js v2.0.3
 
 (function() {
   console.log('Quick View script initialized');
@@ -792,81 +792,73 @@
     console.log('Found product cards:', productCards.length);
     
     productCards.forEach(card => {
-      if (card.querySelector('.hmstudio-quick-view-btn')) {
+      if (card.querySelector('.quick-view-btn')) {
         console.log('Quick View button already exists for a product, skipping');
         return;
       }
-  
+
       // Get product ID from data-wishlist-id
       const productId = card.querySelector('[data-wishlist-id]')?.getAttribute('data-wishlist-id');
       
       if (productId) {
         console.log('Found product ID:', productId);
         
-        // Find the button container
+        // Find the button container - it's the div with text-align: center
         const buttonContainer = card.querySelector('div[style*="text-align: center"]');
-        
-        if (buttonContainer) {
-          // Add customizable class to the container
-          buttonContainer.className = 'hmstudio-buttons-container';
-          buttonContainer.style.cssText = `
-            text-align: center;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-          `;
-  
-          const button = document.createElement('button');
-          // Add customizable class to the button
-          button.className = 'quick-view-btn hmstudio-quick-view-btn';
-          button.style.cssText = `
-            width: 35px;
-            height: 35px;
-            padding: 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #ffffff;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            vertical-align: middle;
-          `;
-  
-          // Add customizable class to the SVG icon container
-          const iconContainer = document.createElement('span');
-          iconContainer.className = 'hmstudio-quick-view-icon';
-          iconContainer.innerHTML = `
+if (buttonContainer) {
+  // Update the button container styles to ensure horizontal alignment
+  buttonContainer.className = 'hmstudio-buttons-container';  // Add this class
+buttonContainer.style.cssText = `
+    text-align: center;
+    display: inline-flex;  
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+`;
+
+  const button = document.createElement('button');
+  button.className = 'quick-view-btn';
+  button.style.cssText = `
+    width: 35px;
+    height: 35px;
+    padding: 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: inline-flex;  /* Changed to inline-flex */
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;  /* Added this */
+  `;
+
+          // Add eye icon using SVG
+          button.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
               <circle cx="12" cy="12" r="3"></circle>
             </svg>
           `;
-          button.appendChild(iconContainer);
-  
-          // Add hover styles through JavaScript (these can be overridden by CSS)
+
           button.addEventListener('mouseover', () => {
             button.style.backgroundColor = '#f0f0f0';
           });
-  
+
           button.addEventListener('mouseout', () => {
             button.style.backgroundColor = '#ffffff';
           });
-  
+
           button.addEventListener('click', (e) => {
             e.preventDefault();
             console.log('Quick View button clicked for product ID:', productId);
-            this.openQuickView(productId);
+            openQuickView(productId);
           });
-  
-          
-  
-          // Insert button in the correct position
+
+          // Insert before the first button in the container
           const firstButton = buttonContainer.querySelector('a, button');
           if (firstButton) {
-            if (this.config.quickViewStyle === 'left') {
+            if (config.quickViewStyle === 'left') {
               buttonContainer.insertBefore(button, firstButton);
             } else {
               buttonContainer.insertBefore(button, firstButton.nextSibling);
