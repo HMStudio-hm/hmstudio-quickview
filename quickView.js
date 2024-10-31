@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.0.0
+// src/scripts/quickView.js v2.0.1
 
 (function() {
   console.log('Quick View script initialized');
@@ -832,52 +832,40 @@ if (buttonContainer) {
     vertical-align: middle;  /* Added this */
   `;
 
-  // Add eye icon using SVG
-  button.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-      <circle cx="12" cy="12" r="3"></circle>
-    </svg>
-  `;
+          // Add eye icon using SVG
+          button.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          `;
 
-  // Store reference to openQuickView
-  const openQuickView = this.openQuickView.bind(this);  // Bind the context
+          button.addEventListener('mouseover', () => {
+            button.style.backgroundColor = '#f0f0f0';
+          });
 
-  button.addEventListener('click', (e) => {
-    e.preventDefault();
-    console.log('Quick View button clicked for product ID:', productId);
-    openQuickView(productId);  // Use the bound function
-  });
+          button.addEventListener('mouseout', () => {
+            button.style.backgroundColor = '#ffffff';
+          });
 
-  button.addEventListener('mouseover', () => {
-    button.style.backgroundColor = '#f0f0f0';
-  });
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Quick View button clicked for product ID:', productId);
+            openQuickView(productId);
+          });
 
-  button.addEventListener('mouseout', () => {
-    button.style.backgroundColor = '#ffffff';
-  });
-
-  
-
-  // Get the add to cart button to match its height
-  const addToCartButton = buttonContainer.querySelector('.btn-product-card-select-variant');
-  if (addToCartButton) {
-    const buttonHeight = window.getComputedStyle(addToCartButton).height;
-    button.style.height = buttonHeight; // Match the height
-  }
-
-  // Insert button in the correct position
-  const firstButton = buttonContainer.querySelector('a, button');
-  if (firstButton) {
-    if (config.quickViewStyle === 'left') {
-      buttonContainer.insertBefore(button, firstButton);
-    } else {
-      buttonContainer.insertBefore(button, firstButton.nextSibling);
-    }
-  } else {
-    buttonContainer.appendChild(button);
-  }
-}
+          // Insert before the first button in the container
+          const firstButton = buttonContainer.querySelector('a, button');
+          if (firstButton) {
+            if (config.quickViewStyle === 'left') {
+              buttonContainer.insertBefore(button, firstButton);
+            } else {
+              buttonContainer.insertBefore(button, firstButton.nextSibling);
+            }
+          } else {
+            buttonContainer.appendChild(button);
+          }
+        }
       }
     });
   }
