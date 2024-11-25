@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.1.2
+// src/scripts/quickView.js v2.1.3
 
 (function() {
   console.log('Quick View script initialized');
@@ -32,13 +32,13 @@
     async trackEvent(eventType, data) {
       try {
         console.log('Starting analytics tracking for event:', eventType);
-        console.log('Store ID:', storeId); // Make sure this is defined
+        console.log('Store ID:', storeId);
         
         const timestamp = new Date();
-        const month = timestamp.toISOString().slice(0, 7); // Format: "2024-11"
+        const month = timestamp.toISOString().slice(0, 7);
   
         const eventData = {
-          storeId: storeId,
+          storeId,
           eventType,
           timestamp: timestamp.toISOString(),
           month,
@@ -56,20 +56,14 @@
         });
   
         const responseData = await response.json();
-        console.log('Analytics response:', responseData);
-  
+        
         if (!response.ok) {
           throw new Error(`Analytics tracking failed: ${responseData.error || response.statusText}`);
         }
   
-        console.log(`Analytics event tracked successfully: ${eventType}`);
+        console.log('Analytics response:', responseData);
       } catch (error) {
         console.error('Analytics tracking error:', error);
-        // Log the full error for debugging
-        console.error('Full error details:', {
-          message: error.message,
-          stack: error.stack
-        });
       }
     }
   };
