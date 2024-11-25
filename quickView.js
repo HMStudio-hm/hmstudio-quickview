@@ -1,10 +1,26 @@
-// src/scripts/quickView.js v2.0.5
+// src/scripts/quickView.js v2.0.6
 
 (function() {
   console.log('Quick View script initialized');
 
-  // Add this at the top of the file, after the initial setup
+  function getStoreIdFromUrl() {
+    const scriptTag = document.currentScript;
+    const scriptUrl = new URL(scriptTag.src);
+    const storeId = scriptUrl.searchParams.get('storeId');
+    return storeId ? storeId.split('?')[0] : null;
+  }
 
+  function getCurrentLanguage() {
+    return document.documentElement.lang || 'ar'; // Default to Arabic if not found
+  }
+
+  const storeId = getStoreIdFromUrl();
+  if (!storeId) {
+    console.error('Store ID not found in script URL');
+    return;
+  }
+
+  // Add this at the top of the file, after the initial setup
 const Analytics = {
   async trackEvent(eventType, data) {
     try {
@@ -38,23 +54,6 @@ const Analytics = {
     }
   }
 };
-
-  function getStoreIdFromUrl() {
-    const scriptTag = document.currentScript;
-    const scriptUrl = new URL(scriptTag.src);
-    const storeId = scriptUrl.searchParams.get('storeId');
-    return storeId ? storeId.split('?')[0] : null;
-  }
-
-  function getCurrentLanguage() {
-    return document.documentElement.lang || 'ar'; // Default to Arabic if not found
-  }
-
-  const storeId = getStoreIdFromUrl();
-  if (!storeId) {
-    console.error('Store ID not found in script URL');
-    return;
-  }
 
   const config = {
     ...window.HMStudioQuickViewConfig,
