@@ -1,76 +1,46 @@
-// src/scripts/quickView.js v2.0.9
+// src/scripts/quickView.js v2.1.0
 
 (function() {
   console.log('Quick View script initialized');
+
+  function getStoreIdFromUrl() {
+    const scriptTag = document.currentScript;
+    const scriptUrl = new URL(scriptTag.src);
+    const storeId = scriptUrl.searchParams.get('storeId');
+    return storeId ? storeId.split('?')[0] : null;
+  }
 
   function getCurrentLanguage() {
     return document.documentElement.lang || 'ar'; // Default to Arabic if not found
   }
 
-  function getStoreIdFromUrl() {
-    try {
-      // First try to get from current script
-      const scripts = document.getElementsByTagName('script');
-      for (const script of scripts) {
-        if (script.src && script.src.includes('quickView.js')) {
-          const url = new URL(script.src);
-          const storeId = url.searchParams.get('storeId');
-          if (storeId) {
-            return storeId.split('?')[0];
-          }
-        }
-      }
-      
-      // Fallback to get from URL if available
-      const scriptUrl = document.currentScript?.src;
-      if (scriptUrl) {
-        const url = new URL(scriptUrl);
-        const storeId = url.searchParams.get('storeId');
-        if (storeId) {
-          return storeId.split('?')[0];
-        }
-      }
-
-      console.warn('Store ID not found in script URL');
-      return null;
-    } catch (error) {
-      console.error('Error getting store ID:', error);
-      return null;
-    }
-  }
-
-  function getCurrentLanguage() {
-    return document.documentElement.lang || 'ar';
-  }
-
-  // Initialize store ID once at the start
-  const STORE_ID = getStoreIdFromUrl();
-  if (!STORE_ID) {
+  const storeId = getStoreIdFromUrl();
+  if (!storeId) {
     console.error('Store ID not found in script URL');
     return;
   }
 
-  // Analytics object definition
+  const config = {
+    ...window.HMStudioQuickViewConfig,
+    storeId: storeId
+  };
+
+  console.log('Quick View config:', config);
+
+  // Add Analytics object
   const Analytics = {
     async trackEvent(eventType, data) {
       try {
-        if (!STORE_ID) {
-          console.warn('Store ID not available for analytics tracking');
-          return;
-        }
-
         const timestamp = new Date();
         const month = timestamp.toISOString().slice(0, 7); // Format: "2024-11"
 
         const eventData = {
-          storeId: STORE_ID,
+          storeId: storeId,
           eventType,
           timestamp: timestamp.toISOString(),
           month,
           ...data
         };
-
-        console.log('Sending analytics event:', eventData);
 
         const response = await fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/trackAnalytics`, {
           method: 'POST',
@@ -87,21 +57,13 @@
         console.log(`Analytics event tracked successfully: ${eventType}`);
       } catch (error) {
         console.error('Analytics tracking error:', error);
-        // Don't throw error - analytics should fail silently
       }
     }
   };
 
-  const config = {
-    ...window.HMStudioQuickViewConfig,
-    storeId: storeId
-  };
-
-  console.log('Quick View config:', config);
-
   async function fetchProductData(productId) {
     console.log('Fetching product data for ID:', productId);
-    const url = `https://europe-west3-hmstudio-85f42.cloudfunctions.net/getProductData?storeId=${config.storeId}&productId=${productId}`;
+    const url = `https://europe-west3-hmstudio-85f42.cloudfunctions.net/getProductData?storeId=${storeId}&productId=${productId}`;
     
     try {
       const response = await fetch(url);
@@ -474,7 +436,7 @@
     }
   }
 
-  async function handleAddToCart(productData) {
+  function handleAddToCart(productData) {
     const currentLang = getCurrentLanguage();
     const form = document.getElementById('product-form');
     
@@ -489,7 +451,7 @@
       alert(message);
       return;
     }
-  
+
     // Check if product has variants
     if (productData.variants && productData.variants.length > 0) {
       console.log('Product has variants:', productData.variants);
@@ -505,7 +467,7 @@
         }
         selectedVariants[labelText] = select.value;
       });
-  
+
       // Check if all variants are selected
       if (missingSelections.length > 0) {
         const message = currentLang === 'ar' 
@@ -514,9 +476,9 @@
         alert(message);
         return;
       }
-  
+
       console.log('Selected variants:', selectedVariants);
-  
+
       // Find the matching variant
       const selectedVariant = productData.variants.find(variant => {
         return variant.attributes.every(attr => {
@@ -524,7 +486,7 @@
           return selectedVariants[attrLabel] === attr.value[currentLang];
         });
       });
-  
+
       if (!selectedVariant) {
         console.error('No matching variant found');
         console.log('Selected combinations:', selectedVariants);
@@ -534,7 +496,7 @@
         alert(message);
         return;
       }
-  
+
       console.log('Found matching variant:', selectedVariant);
       
       // Update product ID to selected variant ID
@@ -544,7 +506,7 @@
         console.log('Updated product ID to variant ID:', selectedVariant.id);
       }
     }
-  
+
     // Ensure required hidden inputs exist and are populated
     let productIdInput = form.querySelector('input[name="product_id"]');
     if (!productIdInput) {
@@ -563,18 +525,18 @@
       form.appendChild(formQuantityInput);
     }
     formQuantityInput.value = quantity;
-  
+
     // Show loading spinner
     const loadingSpinners = document.querySelectorAll('.add-to-cart-progress');
     loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
-  
+
     // Get the form data
     const formData = new FormData(form);
     console.log('Form data being submitted:', {
       product_id: formData.get('product_id'),
       quantity: formData.get('quantity')
     });
-  
+
     // Call Zid's cart function
     try {
       zid.store.cart.addProduct({ 
@@ -587,15 +549,6 @@
       .then(function (response) {
         console.log('Add to cart response:', response);
         if (response.status === 'success') {
-          // Add analytics tracking here
-          Analytics.trackEvent('cart_add', {
-            productId: formData.get('product_id'),
-            quantity: parseInt(formData.get('quantity')),
-            productName: typeof productData.name === 'object' ? 
-              productData.name[currentLang] : 
-              productData.name
-          });
-  
           if (typeof setCartBadge === 'function') {
             setCartBadge(response.data.cart.products_count);
           }
@@ -633,7 +586,7 @@
   async function displayQuickViewModal(productData) {
     const currentLang = getCurrentLanguage();
     console.log('Displaying Quick View modal for product:', productData);
-  
+
     // Track modal open event first
     try {
       await Analytics.trackEvent('modal_open', {
@@ -650,7 +603,7 @@
     if (existingModal) {
       existingModal.remove();
     }
-  
+
     const modal = document.createElement('div');
     modal.className = 'quick-view-modal';
     modal.style.cssText = `
@@ -665,7 +618,7 @@
       align-items: center;
       z-index: 1000;
     `;
-  
+
     const content = document.createElement('div');
     content.className = 'quick-view-content';
     content.style.cssText = `
@@ -681,12 +634,12 @@
       text-align: ${currentLang === 'ar' ? 'right' : 'left'};
       direction: ${currentLang === 'ar' ? 'rtl' : 'ltr'};
     `;
-  
+
     // Create form
     const form = document.createElement('form');
     form.id = 'product-form';
     content.appendChild(form);
-  
+
     // Create and append the title
     const title = document.createElement('h2');
     title.textContent = productData.name[currentLang] || productData.name;
@@ -696,19 +649,19 @@
       color: #333;
     `;
     form.appendChild(title);
-  
+
     // Create and append the image gallery
     if (productData.images && productData.images.length > 0) {
       const gallery = createImageGallery(productData.images);
       form.appendChild(gallery);
     }
-  
+
     // Create product details section
     const details = document.createElement('div');
     details.style.cssText = `
       margin-top: 20px;
     `;
-  
+
     // Add price display elements
     const priceContainer = document.createElement('div');
     const currentPrice = document.createElement('span');
@@ -726,21 +679,21 @@
       color: #999;
       display: none;
     `;
-  
+
     priceContainer.appendChild(currentPrice);
     priceContainer.appendChild(oldPrice);
     details.appendChild(priceContainer);
-  
+
     // Add variants section if product has variants
     if (productData.variants && productData.variants.length > 0) {
       const variantsSection = createVariantsSection(productData);
       details.appendChild(variantsSection);
     }
-  
+
     // Add quantity selector
     const quantitySelector = createQuantitySelector(currentLang);
     details.appendChild(quantitySelector);
-  
+
     // Add description
     if (productData.description && productData.description[currentLang]) {
       const description = document.createElement('p');
@@ -752,9 +705,9 @@
       description.textContent = productData.description[currentLang];
       details.appendChild(description);
     }
-  
+
     form.appendChild(details);
-  
+
     // Add hidden inputs
     const productIdInput = document.createElement('input');
     productIdInput.type = 'hidden';
@@ -762,7 +715,7 @@
     productIdInput.name = 'product_id';
     productIdInput.value = productData.id;
     form.appendChild(productIdInput);
-  
+
     // Add buttons container
     const buttonsContainer = document.createElement('div');
     buttonsContainer.style.cssText = `
@@ -773,7 +726,7 @@
       padding-top: 20px;
       border-top: 1px solid #eee;
     `;
-  
+
     // Add to Cart button
     const addToCartBtn = document.createElement('button');
     addToCartBtn.textContent = currentLang === 'ar' ? 'أضف إلى السلة' : 'Add to Cart';
@@ -789,7 +742,7 @@
       font-weight: bold;
       transition: background-color 0.3s ease;
     `;
-  
+
     // Add loading spinner
     const loadingSpinner = document.createElement('div');
     loadingSpinner.className = 'add-to-cart-progress d-none';
@@ -804,7 +757,7 @@
       animation: spin 1s linear infinite;
     `;
     addToCartBtn.appendChild(loadingSpinner);
-  
+
     // Add keyframe animation for spinner
     const styleSheet = document.createElement('style');
     styleSheet.textContent = `
@@ -814,11 +767,11 @@
       }
     `;
     document.head.appendChild(styleSheet);
-  
+
     addToCartBtn.addEventListener('click', () => {
       handleAddToCart(productData);
     });
-  
+
     // Close button
     const closeBtn = document.createElement('button');
     closeBtn.textContent = currentLang === 'ar' ? 'إغلاق' : 'Close';
@@ -833,7 +786,7 @@
       font-weight: bold;
       transition: background-color 0.3s ease;
     `;
-  
+
     closeBtn.addEventListener('mouseover', () => {
       closeBtn.style.backgroundColor = '#da190b';
     });
@@ -843,20 +796,20 @@
     closeBtn.addEventListener('click', () => {
       modal.remove();
     });
-  
+
     buttonsContainer.appendChild(closeBtn);
     buttonsContainer.appendChild(addToCartBtn);
     form.appendChild(buttonsContainer);
-  
+
     modal.appendChild(content);
-  
+
     // Close modal when clicking outside
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.remove();
       }
     });
-  
+
     document.body.appendChild(modal);
     
     // Initialize price display
@@ -865,7 +818,7 @@
     } else {
       currentPrice.textContent = productData.formatted_price || productData.price;
     }
-  
+
     console.log('Quick View modal added to DOM');
   }
 
@@ -980,7 +933,7 @@ if (document.readyState === 'loading') {
 } else {
   addQuickViewButtons();
 }
-  
+
   // Expose necessary functions
   window.HMStudioQuickView = {
     openQuickView: openQuickView
