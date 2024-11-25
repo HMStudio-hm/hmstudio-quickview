@@ -1,59 +1,89 @@
-// src/scripts/quickView.js v2.0.6
+// src/scripts/quickView.js v2.0.7
 
 (function() {
   console.log('Quick View script initialized');
-
-  function getStoreIdFromUrl() {
-    const scriptTag = document.currentScript;
-    const scriptUrl = new URL(scriptTag.src);
-    const storeId = scriptUrl.searchParams.get('storeId');
-    return storeId ? storeId.split('?')[0] : null;
-  }
 
   function getCurrentLanguage() {
     return document.documentElement.lang || 'ar'; // Default to Arabic if not found
   }
 
-  const storeId = getStoreIdFromUrl();
-  if (!storeId) {
-    console.error('Store ID not found in script URL');
-    return;
-  }
-
-  // Add this at the top of the file, after the initial setup
-const Analytics = {
-  async trackEvent(eventType, data) {
+  // Improved store ID retrieval
+  function getStoreIdFromUrl() {
     try {
-      const storeId = getStoreIdFromUrl();
-      if (!storeId) return;
+      // First try to get from current script
+      const scripts = document.getElementsByTagName('script');
+      for (const script of scripts) {
+        if (script.src && script.src.includes('quickView.js')) {
+          const url = new URL(script.src);
+          const storeId = url.searchParams.get('storeId');
+          if (storeId) {
+            return storeId.split('?')[0];
+          }
+        }
+      }
+      
+      // Fallback to get from URL if available
+      const scriptUrl = document.currentScript?.src;
+      if (scriptUrl) {
+        const url = new URL(scriptUrl);
+        const storeId = url.searchParams.get('storeId');
+        if (storeId) {
+          return storeId.split('?')[0];
+        }
+      }
 
-      const timestamp = new Date();
-      const month = timestamp.toISOString().slice(0, 7); // Format: "2024-11"
-
-      const eventData = {
-        storeId,
-        eventType,
-        timestamp: timestamp.toISOString(),
-        month,
-        ...data
-      };
-
-      // Send to Firebase Function
-      await fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/trackAnalytics`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(eventData)
-      });
-
-      console.log(`Analytics event tracked: ${eventType}`);
+      console.warn('Store ID not found in script URL');
+      return null;
     } catch (error) {
-      console.error('Analytics tracking error:', error);
-      // Don't throw error - analytics should fail silently
+      console.error('Error getting store ID:', error);
+      return null;
     }
   }
-};
+
+  // Initialize store ID once
+  const STORE_ID = getStoreIdFromUrl();
+
+  // Analytics object
+  const Analytics = {
+    async trackEvent(eventType, data) {
+      try {
+        // Use stored STORE_ID instead of calling getStoreIdFromUrl again
+        if (!STORE_ID) {
+          console.warn('Store ID not available for analytics tracking');
+          return;
+        }
+
+        const timestamp = new Date();
+        const month = timestamp.toISOString().slice(0, 7); // Format: "2024-11"
+
+        const eventData = {
+          storeId: STORE_ID,
+          eventType,
+          timestamp: timestamp.toISOString(),
+          month,
+          ...data
+        };
+
+        // Send to Firebase Function
+        const response = await fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/trackAnalytics`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(eventData)
+        });
+
+        if (!response.ok) {
+          throw new Error(`Analytics tracking failed: ${response.statusText}`);
+        }
+
+        console.log(`Analytics event tracked successfully: ${eventType}`);
+      } catch (error) {
+        console.error('Analytics tracking error:', error);
+        // Don't throw error - analytics should fail silently
+      }
+    }
+  };
 
   const config = {
     ...window.HMStudioQuickViewConfig,
