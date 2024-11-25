@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.0.7
+// src/scripts/quickView.js v2.0.8
 
 (function() {
   console.log('Quick View script initialized');
@@ -7,7 +7,6 @@
     return document.documentElement.lang || 'ar'; // Default to Arabic if not found
   }
 
-  // Improved store ID retrieval
   function getStoreIdFromUrl() {
     try {
       // First try to get from current script
@@ -31,7 +30,7 @@
           return storeId.split('?')[0];
         }
       }
-
+  
       console.warn('Store ID not found in script URL');
       return null;
     } catch (error) {
@@ -39,11 +38,11 @@
       return null;
     }
   }
-
+  
   // Initialize store ID once
   const STORE_ID = getStoreIdFromUrl();
-
-  // Analytics object
+  
+  // Updated Analytics object
   const Analytics = {
     async trackEvent(eventType, data) {
       try {
@@ -52,10 +51,10 @@
           console.warn('Store ID not available for analytics tracking');
           return;
         }
-
+  
         const timestamp = new Date();
         const month = timestamp.toISOString().slice(0, 7); // Format: "2024-11"
-
+  
         const eventData = {
           storeId: STORE_ID,
           eventType,
@@ -63,8 +62,9 @@
           month,
           ...data
         };
-
-        // Send to Firebase Function
+  
+        console.log('Sending analytics event:', eventData);
+  
         const response = await fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/trackAnalytics`, {
           method: 'POST',
           headers: {
@@ -72,11 +72,11 @@
           },
           body: JSON.stringify(eventData)
         });
-
+  
         if (!response.ok) {
           throw new Error(`Analytics tracking failed: ${response.statusText}`);
         }
-
+  
         console.log(`Analytics event tracked successfully: ${eventType}`);
       } catch (error) {
         console.error('Analytics tracking error:', error);
@@ -624,19 +624,26 @@
 
 
   async function displayQuickViewModal(productData) {
-    // Add this at the start of the function
-    await Analytics.trackEvent('modal_open', {
-      productId: productData.id,
-      productName: productData.name
-    });
     const currentLang = getCurrentLanguage();
     console.log('Displaying Quick View modal for product:', productData);
+  
+    // Track modal open event first
+    try {
+      await Analytics.trackEvent('modal_open', {
+        productId: productData.id,
+        productName: typeof productData.name === 'object' ? 
+          productData.name[currentLang] : 
+          productData.name
+      });
+    } catch (trackingError) {
+      console.warn('Analytics tracking failed:', trackingError);
+    }
     
     const existingModal = document.querySelector('.quick-view-modal');
     if (existingModal) {
       existingModal.remove();
     }
-
+  
     const modal = document.createElement('div');
     modal.className = 'quick-view-modal';
     modal.style.cssText = `
@@ -651,7 +658,7 @@
       align-items: center;
       z-index: 1000;
     `;
-
+  
     const content = document.createElement('div');
     content.className = 'quick-view-content';
     content.style.cssText = `
@@ -667,12 +674,12 @@
       text-align: ${currentLang === 'ar' ? 'right' : 'left'};
       direction: ${currentLang === 'ar' ? 'rtl' : 'ltr'};
     `;
-
+  
     // Create form
     const form = document.createElement('form');
     form.id = 'product-form';
     content.appendChild(form);
-
+  
     // Create and append the title
     const title = document.createElement('h2');
     title.textContent = productData.name[currentLang] || productData.name;
@@ -682,19 +689,19 @@
       color: #333;
     `;
     form.appendChild(title);
-
+  
     // Create and append the image gallery
     if (productData.images && productData.images.length > 0) {
       const gallery = createImageGallery(productData.images);
       form.appendChild(gallery);
     }
-
+  
     // Create product details section
     const details = document.createElement('div');
     details.style.cssText = `
       margin-top: 20px;
     `;
-
+  
     // Add price display elements
     const priceContainer = document.createElement('div');
     const currentPrice = document.createElement('span');
@@ -712,21 +719,21 @@
       color: #999;
       display: none;
     `;
-
+  
     priceContainer.appendChild(currentPrice);
     priceContainer.appendChild(oldPrice);
     details.appendChild(priceContainer);
-
+  
     // Add variants section if product has variants
     if (productData.variants && productData.variants.length > 0) {
       const variantsSection = createVariantsSection(productData);
       details.appendChild(variantsSection);
     }
-
+  
     // Add quantity selector
     const quantitySelector = createQuantitySelector(currentLang);
     details.appendChild(quantitySelector);
-
+  
     // Add description
     if (productData.description && productData.description[currentLang]) {
       const description = document.createElement('p');
@@ -738,9 +745,9 @@
       description.textContent = productData.description[currentLang];
       details.appendChild(description);
     }
-
+  
     form.appendChild(details);
-
+  
     // Add hidden inputs
     const productIdInput = document.createElement('input');
     productIdInput.type = 'hidden';
@@ -748,7 +755,7 @@
     productIdInput.name = 'product_id';
     productIdInput.value = productData.id;
     form.appendChild(productIdInput);
-
+  
     // Add buttons container
     const buttonsContainer = document.createElement('div');
     buttonsContainer.style.cssText = `
@@ -759,7 +766,7 @@
       padding-top: 20px;
       border-top: 1px solid #eee;
     `;
-
+  
     // Add to Cart button
     const addToCartBtn = document.createElement('button');
     addToCartBtn.textContent = currentLang === 'ar' ? 'أضف إلى السلة' : 'Add to Cart';
@@ -775,7 +782,7 @@
       font-weight: bold;
       transition: background-color 0.3s ease;
     `;
-
+  
     // Add loading spinner
     const loadingSpinner = document.createElement('div');
     loadingSpinner.className = 'add-to-cart-progress d-none';
@@ -790,7 +797,7 @@
       animation: spin 1s linear infinite;
     `;
     addToCartBtn.appendChild(loadingSpinner);
-
+  
     // Add keyframe animation for spinner
     const styleSheet = document.createElement('style');
     styleSheet.textContent = `
@@ -800,11 +807,11 @@
       }
     `;
     document.head.appendChild(styleSheet);
-
+  
     addToCartBtn.addEventListener('click', () => {
       handleAddToCart(productData);
     });
-
+  
     // Close button
     const closeBtn = document.createElement('button');
     closeBtn.textContent = currentLang === 'ar' ? 'إغلاق' : 'Close';
@@ -819,7 +826,7 @@
       font-weight: bold;
       transition: background-color 0.3s ease;
     `;
-
+  
     closeBtn.addEventListener('mouseover', () => {
       closeBtn.style.backgroundColor = '#da190b';
     });
@@ -829,20 +836,20 @@
     closeBtn.addEventListener('click', () => {
       modal.remove();
     });
-
+  
     buttonsContainer.appendChild(closeBtn);
     buttonsContainer.appendChild(addToCartBtn);
     form.appendChild(buttonsContainer);
-
+  
     modal.appendChild(content);
-
+  
     // Close modal when clicking outside
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.remove();
       }
     });
-
+  
     document.body.appendChild(modal);
     
     // Initialize price display
@@ -851,7 +858,7 @@
     } else {
       currentPrice.textContent = productData.formatted_price || productData.price;
     }
-
+  
     console.log('Quick View modal added to DOM');
   }
 
