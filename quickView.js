@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.1.0
+// src/scripts/quickView.js v2.1.1
 
 (function() {
   console.log('Quick View script initialized');
@@ -924,15 +924,6 @@ buttonContainer.style.cssText = `
   });
   observer.observe(document.body, { childList: true, subtree: true });
   console.log('MutationObserver set up');
-
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    addQuickViewButtons();
-  });
-} else {
-  addQuickViewButtons();
-}
 
   // Expose necessary functions
   window.HMStudioQuickView = {
