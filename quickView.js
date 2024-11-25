@@ -1,7 +1,43 @@
-// src/scripts/quickView.js v2.0.4
+// src/scripts/quickView.js v2.0.5
 
 (function() {
   console.log('Quick View script initialized');
+
+  // Add this at the top of the file, after the initial setup
+
+const Analytics = {
+  async trackEvent(eventType, data) {
+    try {
+      const storeId = getStoreIdFromUrl();
+      if (!storeId) return;
+
+      const timestamp = new Date();
+      const month = timestamp.toISOString().slice(0, 7); // Format: "2024-11"
+
+      const eventData = {
+        storeId,
+        eventType,
+        timestamp: timestamp.toISOString(),
+        month,
+        ...data
+      };
+
+      // Send to Firebase Function
+      await fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/trackAnalytics`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(eventData)
+      });
+
+      console.log(`Analytics event tracked: ${eventType}`);
+    } catch (error) {
+      console.error('Analytics tracking error:', error);
+      // Don't throw error - analytics should fail silently
+    }
+  }
+};
 
   function getStoreIdFromUrl() {
     const scriptTag = document.currentScript;
@@ -402,7 +438,7 @@
     }
   }
 
-  function handleAddToCart(productData) {
+  async function handleAddToCart(productData) {
     const currentLang = getCurrentLanguage();
     const form = document.getElementById('product-form');
     
@@ -417,7 +453,7 @@
       alert(message);
       return;
     }
-
+  
     // Check if product has variants
     if (productData.variants && productData.variants.length > 0) {
       console.log('Product has variants:', productData.variants);
@@ -433,7 +469,7 @@
         }
         selectedVariants[labelText] = select.value;
       });
-
+  
       // Check if all variants are selected
       if (missingSelections.length > 0) {
         const message = currentLang === 'ar' 
@@ -442,9 +478,9 @@
         alert(message);
         return;
       }
-
+  
       console.log('Selected variants:', selectedVariants);
-
+  
       // Find the matching variant
       const selectedVariant = productData.variants.find(variant => {
         return variant.attributes.every(attr => {
@@ -452,7 +488,7 @@
           return selectedVariants[attrLabel] === attr.value[currentLang];
         });
       });
-
+  
       if (!selectedVariant) {
         console.error('No matching variant found');
         console.log('Selected combinations:', selectedVariants);
@@ -462,7 +498,7 @@
         alert(message);
         return;
       }
-
+  
       console.log('Found matching variant:', selectedVariant);
       
       // Update product ID to selected variant ID
@@ -472,7 +508,7 @@
         console.log('Updated product ID to variant ID:', selectedVariant.id);
       }
     }
-
+  
     // Ensure required hidden inputs exist and are populated
     let productIdInput = form.querySelector('input[name="product_id"]');
     if (!productIdInput) {
@@ -491,18 +527,18 @@
       form.appendChild(formQuantityInput);
     }
     formQuantityInput.value = quantity;
-
+  
     // Show loading spinner
     const loadingSpinners = document.querySelectorAll('.add-to-cart-progress');
     loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
-
+  
     // Get the form data
     const formData = new FormData(form);
     console.log('Form data being submitted:', {
       product_id: formData.get('product_id'),
       quantity: formData.get('quantity')
     });
-
+  
     // Call Zid's cart function
     try {
       zid.store.cart.addProduct({ 
@@ -515,6 +551,15 @@
       .then(function (response) {
         console.log('Add to cart response:', response);
         if (response.status === 'success') {
+          // Add analytics tracking here
+          Analytics.trackEvent('cart_add', {
+            productId: formData.get('product_id'),
+            quantity: parseInt(formData.get('quantity')),
+            productName: typeof productData.name === 'object' ? 
+              productData.name[currentLang] : 
+              productData.name
+          });
+  
           if (typeof setCartBadge === 'function') {
             setCartBadge(response.data.cart.products_count);
           }
@@ -549,7 +594,12 @@
   }
 
 
-  function displayQuickViewModal(productData) {
+  async function displayQuickViewModal(productData) {
+    // Add this at the start of the function
+    await Analytics.trackEvent('modal_open', {
+      productId: productData.id,
+      productName: productData.name
+    });
     const currentLang = getCurrentLanguage();
     console.log('Displaying Quick View modal for product:', productData);
     
