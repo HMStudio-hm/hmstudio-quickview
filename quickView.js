@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.1.3
+// src/scripts/quickView.js v2.1.4
 
 (function() {
   console.log('Quick View script initialized');
@@ -443,7 +443,7 @@
     }
   }
 
-  function handleAddToCart(productData) {
+  async function handleAddToCart(productData) {
     const currentLang = getCurrentLanguage();
     const form = document.getElementById('product-form');
     
@@ -458,7 +458,7 @@
       alert(message);
       return;
     }
-
+  
     // Check if product has variants
     if (productData.variants && productData.variants.length > 0) {
       console.log('Product has variants:', productData.variants);
@@ -474,7 +474,7 @@
         }
         selectedVariants[labelText] = select.value;
       });
-
+  
       // Check if all variants are selected
       if (missingSelections.length > 0) {
         const message = currentLang === 'ar' 
@@ -483,9 +483,9 @@
         alert(message);
         return;
       }
-
+  
       console.log('Selected variants:', selectedVariants);
-
+  
       // Find the matching variant
       const selectedVariant = productData.variants.find(variant => {
         return variant.attributes.every(attr => {
@@ -493,7 +493,7 @@
           return selectedVariants[attrLabel] === attr.value[currentLang];
         });
       });
-
+  
       if (!selectedVariant) {
         console.error('No matching variant found');
         console.log('Selected combinations:', selectedVariants);
@@ -503,7 +503,7 @@
         alert(message);
         return;
       }
-
+  
       console.log('Found matching variant:', selectedVariant);
       
       // Update product ID to selected variant ID
@@ -513,7 +513,7 @@
         console.log('Updated product ID to variant ID:', selectedVariant.id);
       }
     }
-
+  
     // Ensure required hidden inputs exist and are populated
     let productIdInput = form.querySelector('input[name="product_id"]');
     if (!productIdInput) {
@@ -532,18 +532,18 @@
       form.appendChild(formQuantityInput);
     }
     formQuantityInput.value = quantity;
-
+  
     // Show loading spinner
     const loadingSpinners = document.querySelectorAll('.add-to-cart-progress');
     loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
-
+  
     // Get the form data
     const formData = new FormData(form);
     console.log('Form data being submitted:', {
       product_id: formData.get('product_id'),
       quantity: formData.get('quantity')
     });
-
+  
     // Call Zid's cart function
     try {
       zid.store.cart.addProduct({ 
@@ -553,9 +553,22 @@
           quantity: formData.get('quantity')
         }
       })
-      .then(function (response) {
+      .then(async function (response) {
         console.log('Add to cart response:', response);
         if (response.status === 'success') {
+          // Track successful cart addition
+          try {
+            await Analytics.trackEvent('cart_add', {
+              productId: formData.get('product_id'),
+              quantity: parseInt(formData.get('quantity')),
+              productName: typeof productData.name === 'object' ? 
+                productData.name[currentLang] : 
+                productData.name
+            });
+          } catch (trackingError) {
+            console.warn('Analytics tracking error:', trackingError);
+          }
+  
           if (typeof setCartBadge === 'function') {
             setCartBadge(response.data.cart.products_count);
           }
