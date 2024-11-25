@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.1.1
+// src/scripts/quickView.js v2.1.2
 
 (function() {
   console.log('Quick View script initialized');
@@ -31,9 +31,12 @@
   const Analytics = {
     async trackEvent(eventType, data) {
       try {
+        console.log('Starting analytics tracking for event:', eventType);
+        console.log('Store ID:', storeId); // Make sure this is defined
+        
         const timestamp = new Date();
         const month = timestamp.toISOString().slice(0, 7); // Format: "2024-11"
-
+  
         const eventData = {
           storeId: storeId,
           eventType,
@@ -41,7 +44,9 @@
           month,
           ...data
         };
-
+  
+        console.log('Sending analytics event data:', eventData);
+  
         const response = await fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/trackAnalytics`, {
           method: 'POST',
           headers: {
@@ -49,14 +54,22 @@
           },
           body: JSON.stringify(eventData)
         });
-
+  
+        const responseData = await response.json();
+        console.log('Analytics response:', responseData);
+  
         if (!response.ok) {
-          throw new Error(`Analytics tracking failed: ${response.statusText}`);
+          throw new Error(`Analytics tracking failed: ${responseData.error || response.statusText}`);
         }
-
+  
         console.log(`Analytics event tracked successfully: ${eventType}`);
       } catch (error) {
         console.error('Analytics tracking error:', error);
+        // Log the full error for debugging
+        console.error('Full error details:', {
+          message: error.message,
+          stack: error.stack
+        });
       }
     }
   };
