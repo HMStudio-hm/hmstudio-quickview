@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.0.8
+// src/scripts/quickView.js v2.0.9
 
 (function() {
   console.log('Quick View script initialized');
@@ -30,7 +30,7 @@
           return storeId.split('?')[0];
         }
       }
-  
+
       console.warn('Store ID not found in script URL');
       return null;
     } catch (error) {
@@ -38,23 +38,30 @@
       return null;
     }
   }
-  
-  // Initialize store ID once
+
+  function getCurrentLanguage() {
+    return document.documentElement.lang || 'ar';
+  }
+
+  // Initialize store ID once at the start
   const STORE_ID = getStoreIdFromUrl();
-  
-  // Updated Analytics object
+  if (!STORE_ID) {
+    console.error('Store ID not found in script URL');
+    return;
+  }
+
+  // Analytics object definition
   const Analytics = {
     async trackEvent(eventType, data) {
       try {
-        // Use stored STORE_ID instead of calling getStoreIdFromUrl again
         if (!STORE_ID) {
           console.warn('Store ID not available for analytics tracking');
           return;
         }
-  
+
         const timestamp = new Date();
         const month = timestamp.toISOString().slice(0, 7); // Format: "2024-11"
-  
+
         const eventData = {
           storeId: STORE_ID,
           eventType,
@@ -62,9 +69,9 @@
           month,
           ...data
         };
-  
+
         console.log('Sending analytics event:', eventData);
-  
+
         const response = await fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/trackAnalytics`, {
           method: 'POST',
           headers: {
@@ -72,11 +79,11 @@
           },
           body: JSON.stringify(eventData)
         });
-  
+
         if (!response.ok) {
           throw new Error(`Analytics tracking failed: ${response.statusText}`);
         }
-  
+
         console.log(`Analytics event tracked successfully: ${eventType}`);
       } catch (error) {
         console.error('Analytics tracking error:', error);
@@ -965,6 +972,15 @@ buttonContainer.style.cssText = `
   observer.observe(document.body, { childList: true, subtree: true });
   console.log('MutationObserver set up');
 
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    addQuickViewButtons();
+  });
+} else {
+  addQuickViewButtons();
+}
+  
   // Expose necessary functions
   window.HMStudioQuickView = {
     openQuickView: openQuickView
