@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.1.4
+// src/scripts/quickView.js v2.1.5
 
 (function() {
   console.log('Quick View script initialized');
@@ -27,50 +27,43 @@
 
   console.log('Quick View config:', config);
 
-  // Add Analytics object
-  const Analytics = {
-    async trackEvent(eventType, data) {
-      try {
-        console.log('Starting analytics tracking for event:', eventType);
-        console.log('Store ID:', storeId);
-        
-        const timestamp = new Date();
-        const month = timestamp.toISOString().slice(0, 7);
+  async function trackQuickViewOpen(productId, productName) {
+    try {
+      // Get store ID from URL
+      const storeId = getStoreIdFromUrl();
+      if (!storeId) return;
   
-        const eventData = {
-          storeId,
-          eventType,
-          timestamp: timestamp.toISOString(),
-          month,
-          ...data
-        };
-  
-        console.log('Sending analytics event data:', eventData);
-  
-        const response = await fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/trackAnalytics`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(eventData)
-        });
-  
-        const responseData = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(`Analytics tracking failed: ${responseData.error || response.statusText}`);
-        }
-  
-        console.log('Analytics response:', responseData);
-      } catch (error) {
-        console.error('Analytics tracking error:', error);
-      }
+      // Call the Cloud Function
+      const trackQuickView = firebase.functions().httpsCallable('trackQuickViewOpen');
+      await trackQuickView({
+        storeId,
+        productId,
+        productName
+      });
+    } catch (error) {
+      console.error('Error tracking Quick View:', error);
     }
-  };
+  }
+  
+  async function trackQuickViewAddToCart(productId, productName) {
+    try {
+      const storeId = getStoreIdFromUrl();
+      if (!storeId) return;
+  
+      const trackAddToCart = firebase.functions().httpsCallable('trackQuickViewAddToCart');
+      await trackAddToCart({
+        storeId,
+        productId,
+        productName
+      });
+    } catch (error) {
+      console.error('Error tracking Quick View add to cart:', error);
+    }
+  }
 
   async function fetchProductData(productId) {
     console.log('Fetching product data for ID:', productId);
-    const url = `https://europe-west3-hmstudio-85f42.cloudfunctions.net/getProductData?storeId=${storeId}&productId=${productId}`;
+    const url = `https://europe-west3-hmstudio-85f42.cloudfunctions.net/getProductData?storeId=${config.storeId}&productId=${productId}`;
     
     try {
       const response = await fetch(url);
@@ -443,7 +436,7 @@
     }
   }
 
-  async function handleAddToCart(productData) {
+  function handleAddToCart(productData) {
     const currentLang = getCurrentLanguage();
     const form = document.getElementById('product-form');
     
@@ -458,7 +451,7 @@
       alert(message);
       return;
     }
-  
+
     // Check if product has variants
     if (productData.variants && productData.variants.length > 0) {
       console.log('Product has variants:', productData.variants);
@@ -474,7 +467,7 @@
         }
         selectedVariants[labelText] = select.value;
       });
-  
+
       // Check if all variants are selected
       if (missingSelections.length > 0) {
         const message = currentLang === 'ar' 
@@ -483,9 +476,9 @@
         alert(message);
         return;
       }
-  
+
       console.log('Selected variants:', selectedVariants);
-  
+
       // Find the matching variant
       const selectedVariant = productData.variants.find(variant => {
         return variant.attributes.every(attr => {
@@ -493,7 +486,7 @@
           return selectedVariants[attrLabel] === attr.value[currentLang];
         });
       });
-  
+
       if (!selectedVariant) {
         console.error('No matching variant found');
         console.log('Selected combinations:', selectedVariants);
@@ -503,7 +496,7 @@
         alert(message);
         return;
       }
-  
+
       console.log('Found matching variant:', selectedVariant);
       
       // Update product ID to selected variant ID
@@ -513,7 +506,7 @@
         console.log('Updated product ID to variant ID:', selectedVariant.id);
       }
     }
-  
+
     // Ensure required hidden inputs exist and are populated
     let productIdInput = form.querySelector('input[name="product_id"]');
     if (!productIdInput) {
@@ -532,97 +525,92 @@
       form.appendChild(formQuantityInput);
     }
     formQuantityInput.value = quantity;
-  
+
     // Show loading spinner
     const loadingSpinners = document.querySelectorAll('.add-to-cart-progress');
     loadingSpinners.forEach(spinner => spinner.classList.remove('d-none'));
-  
+
     // Get the form data
     const formData = new FormData(form);
     console.log('Form data being submitted:', {
       product_id: formData.get('product_id'),
       quantity: formData.get('quantity')
     });
-  
+
     // Call Zid's cart function
-    try {
-      zid.store.cart.addProduct({ 
-        formId: 'product-form',
-        data: {
-          product_id: formData.get('product_id'),
-          quantity: formData.get('quantity')
+  try {
+    zid.store.cart.addProduct({ 
+      formId: 'product-form',
+      data: {
+        product_id: formData.get('product_id'),
+        quantity: formData.get('quantity')
+      }
+    })
+    .then(async function (response) {
+      console.log('Add to cart response:', response);
+      if (response.status === 'success') {
+        // Track successful add to cart
+        try {
+          await trackQuickViewAddToCart(
+            formData.get('product_id'),
+            typeof productData.name === 'object' ? productData.name[currentLang] : productData.name
+          );
+        } catch (trackError) {
+          console.error('Error tracking add to cart:', trackError);
         }
-      })
-      .then(async function (response) {
-        console.log('Add to cart response:', response);
-        if (response.status === 'success') {
-          // Track successful cart addition
-          try {
-            await Analytics.trackEvent('cart_add', {
-              productId: formData.get('product_id'),
-              quantity: parseInt(formData.get('quantity')),
-              productName: typeof productData.name === 'object' ? 
-                productData.name[currentLang] : 
-                productData.name
-            });
-          } catch (trackingError) {
-            console.warn('Analytics tracking error:', trackingError);
-          }
-  
-          if (typeof setCartBadge === 'function') {
-            setCartBadge(response.data.cart.products_count);
-          }
-          // Close modal immediately without alert
-          const modal = document.querySelector('.quick-view-modal');
-          if (modal) {
-            modal.remove();
-          }
-        } else {
-          console.error('Add to cart failed:', response);
-          const errorMessage = currentLang === 'ar' 
-            ? response.data.message || 'فشل إضافة المنتج إلى السلة'
-            : response.data.message || 'Failed to add product to cart';
-          alert(errorMessage);
+
+        if (typeof setCartBadge === 'function') {
+          setCartBadge(response.data.cart.products_count);
         }
-      })
-      .catch(function(error) {
-        console.error('Error adding to cart:', error);
+        // Close modal immediately without alert
+        const modal = document.querySelector('.quick-view-modal');
+        if (modal) {
+          modal.remove();
+        }
+      } else {
+        console.error('Add to cart failed:', response);
         const errorMessage = currentLang === 'ar' 
-          ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
-          : 'Error occurred while adding product to cart';
+          ? response.data.message || 'فشل إضافة المنتج إلى السلة'
+          : response.data.message || 'Failed to add product to cart';
         alert(errorMessage);
-      })
-      .finally(function() {
-        // Hide loading spinner
-        loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
-      });
-    } catch (error) {
-      console.error('Critical error in add to cart:', error);
+      }
+    })
+    .catch(function(error) {
+      console.error('Error adding to cart:', error);
+      const errorMessage = currentLang === 'ar' 
+        ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
+        : 'Error occurred while adding product to cart';
+      alert(errorMessage);
+    })
+    .finally(function() {
+      // Hide loading spinner
       loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
-    }
+    });
+  } catch (error) {
+    console.error('Critical error in add to cart:', error);
+    loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
   }
+}
 
 
-  async function displayQuickViewModal(productData) {
-    const currentLang = getCurrentLanguage();
-    console.log('Displaying Quick View modal for product:', productData);
+async function displayQuickViewModal(productData) {
+  const currentLang = getCurrentLanguage();
+  console.log('Displaying Quick View modal for product:', productData);
 
-    // Track modal open event first
-    try {
-      await Analytics.trackEvent('modal_open', {
-        productId: productData.id,
-        productName: typeof productData.name === 'object' ? 
-          productData.name[currentLang] : 
-          productData.name
-      });
-    } catch (trackingError) {
-      console.warn('Analytics tracking failed:', trackingError);
-    }
-    
-    const existingModal = document.querySelector('.quick-view-modal');
-    if (existingModal) {
-      existingModal.remove();
-    }
+  // Track Quick View open
+  try {
+    await trackQuickViewOpen(
+      productData.id,
+      typeof productData.name === 'object' ? productData.name[currentLang] : productData.name
+    );
+  } catch (trackError) {
+    console.error('Error tracking Quick View open:', trackError);
+  }
+  
+  const existingModal = document.querySelector('.quick-view-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
 
     const modal = document.createElement('div');
     modal.className = 'quick-view-modal';
