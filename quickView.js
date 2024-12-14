@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.1.8
+// src/scripts/quickView.js v2.1.9
 
 (function() {
   console.log('Quick View script initialized');
@@ -784,6 +784,9 @@
       const variantsSection = createVariantsSection(productData);
       variantsSection.style.cssText += `
         margin-bottom: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       `;
       detailsSection.appendChild(variantsSection);
     }
@@ -792,6 +795,8 @@
     const quantitySelector = createQuantitySelector(currentLang);
     quantitySelector.style.cssText += `
       margin-bottom: 24px;
+      display: flex;
+      justify-content: center;
     `;
     detailsSection.appendChild(quantitySelector);
 
