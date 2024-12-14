@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.1.9
+// src/scripts/quickView.js v2.2.0
 
 (function() {
   console.log('Quick View script initialized');
@@ -653,7 +653,8 @@
       display: flex;
       flex-direction: column;
       @media (min-width: 768px) {
-        flex-direction: row;
+        flex-direction: row !important;
+        overflow: hidden;
       }
     `;
 
@@ -663,22 +664,26 @@
     form.style.cssText = `
       display: flex;
       flex-direction: column;
-      @media (min-width: 768px) {
-        flex-direction: row;
-      }
       width: 100%;
       height: 100%;
+      @media (min-width: 768px) {
+        flex-direction: row !important;
+      }
     `;
     content.appendChild(form);
 
     // Left side - Image Gallery
     const gallerySection = document.createElement('div');
     gallerySection.style.cssText = `
-      flex: 1;
+      @media (min-width: 768px) {
+        width: 50%;
+        flex: 0 0 50%;
+        max-width: 50%;
+        border-right: 1px solid #e5e7eb;
+        overflow-y: auto;
+      }
       padding: 24px;
-      border-right: 1px solid #e5e7eb;
       @media (max-width: 767px) {
-        border-right: none;
         border-bottom: 1px solid #e5e7eb;
       }
     `;
@@ -698,7 +703,12 @@
     // Right side - Product Details
     const detailsSection = document.createElement('div');
     detailsSection.style.cssText = `
-      flex: 1;
+      @media (min-width: 768px) {
+        width: 50%;
+        flex: 0 0 50%;
+        max-width: 50%;
+        overflow-y: auto;
+      }
       padding: 24px;
       display: flex;
       flex-direction: column;
