@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.2.3
+// src/scripts/quickView.js v2.2.4
 
 (function() {
   console.log('Quick View script initialized');
@@ -659,6 +659,7 @@
       display: flex;
       flex-direction: column;
       max-width: 1000px;
+      overflow: hidden;
     `;
 
     // Create form
@@ -669,6 +670,7 @@
       width: 100%;
       height: 100%;
       flex-direction: column;
+      overflow-y: auto;
     `;
 
     // Add media query styles
@@ -677,16 +679,23 @@
       @media screen and (min-width: 768px) {
         .quick-view-form {
           flex-direction: row !important;
+          overflow: hidden !important;
         }
         .quick-view-gallery {
           width: 50% !important;
           border-right: 1px solid #e5e7eb !important;
           border-bottom: none !important;
-          max-height: none !important;
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          padding-top: 40px !important;
         }
         .quick-view-details {
           width: 50% !important;
-          max-height: none !important;
+          padding-top: 40px !important;
+        }
+        .quick-view-gallery img {
+          margin: 0 auto !important;
         }
       }
       @keyframes spin {
@@ -706,7 +715,9 @@
       width: 100%;
       padding: 20px;
       border-bottom: 1px solid #e5e7eb;
-      height: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     `;
 
     // Create and append the image gallery
@@ -716,6 +727,8 @@
         display: flex;
         flex-direction: column;
         gap: 16px;
+        align-items: center;
+        width: 100%;
       `;
       gallerySection.appendChild(gallery);
     }
@@ -730,7 +743,6 @@
       flex-direction: column;
       text-align: ${currentLang === 'ar' ? 'right' : 'left'};
       direction: ${currentLang === 'ar' ? 'rtl' : 'ltr'};
-      height: auto;
     `;
 
     // Close button
@@ -841,9 +853,9 @@
       const description = document.createElement('p');
       description.style.cssText = `
         margin-bottom: 20px;
-        line-height: 1.6;
+        line-height: 1.5;
         color: #4b5563;
-        font-size: 14px;
+        font-size: 13px;
       `;
       description.textContent = productData.description[currentLang];
       detailsSection.appendChild(description);
