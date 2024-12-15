@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.2.2
+// src/scripts/quickView.js v2.2.3
 
 (function() {
   console.log('Quick View script initialized');
@@ -653,10 +653,9 @@
       background-color: white;
       border-radius: 12px;
       width: 95%;
-      height: 90vh;
+      max-height: 90vh;
       position: relative;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-      overflow: hidden;
       display: flex;
       flex-direction: column;
       max-width: 1000px;
@@ -683,9 +682,11 @@
           width: 50% !important;
           border-right: 1px solid #e5e7eb !important;
           border-bottom: none !important;
+          max-height: none !important;
         }
         .quick-view-details {
           width: 50% !important;
+          max-height: none !important;
         }
       }
       @keyframes spin {
@@ -705,8 +706,7 @@
       width: 100%;
       padding: 20px;
       border-bottom: 1px solid #e5e7eb;
-      overflow-y: auto;
-      max-height: 50vh;
+      height: auto;
     `;
 
     // Create and append the image gallery
@@ -728,10 +728,9 @@
       padding: 20px;
       display: flex;
       flex-direction: column;
-      overflow-y: auto;
       text-align: ${currentLang === 'ar' ? 'right' : 'left'};
       direction: ${currentLang === 'ar' ? 'rtl' : 'ltr'};
-      max-height: 50vh;
+      height: auto;
     `;
 
     // Close button
