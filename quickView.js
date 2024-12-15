@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.2.0
+// src/scripts/quickView.js v2.2.1
 
 (function() {
   console.log('Quick View script initialized');
@@ -647,15 +647,11 @@
       max-width: 1000px;
       width: 95%;
       max-height: 90vh;
-      overflow-y: auto;
       position: relative;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
       display: flex;
       flex-direction: column;
-      @media (min-width: 768px) {
-        flex-direction: row !important;
-        overflow: hidden;
-      }
+      overflow: hidden;
     `;
 
     // Create form
@@ -663,11 +659,11 @@
     form.id = 'product-form';
     form.style.cssText = `
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       width: 100%;
       height: 100%;
-      @media (min-width: 768px) {
-        flex-direction: row !important;
+      @media (max-width: 767px) {
+        flex-direction: column;
       }
     `;
     content.appendChild(form);
@@ -675,15 +671,13 @@
     // Left side - Image Gallery
     const gallerySection = document.createElement('div');
     gallerySection.style.cssText = `
-      @media (min-width: 768px) {
-        width: 50%;
-        flex: 0 0 50%;
-        max-width: 50%;
-        border-right: 1px solid #e5e7eb;
-        overflow-y: auto;
-      }
+      width: 50%;
       padding: 24px;
+      border-right: 1px solid #e5e7eb;
+      overflow-y: auto;
       @media (max-width: 767px) {
+        width: 100%;
+        border-right: none;
         border-bottom: 1px solid #e5e7eb;
       }
     `;
@@ -703,17 +697,16 @@
     // Right side - Product Details
     const detailsSection = document.createElement('div');
     detailsSection.style.cssText = `
-      @media (min-width: 768px) {
-        width: 50%;
-        flex: 0 0 50%;
-        max-width: 50%;
-        overflow-y: auto;
-      }
+      width: 50%;
       padding: 24px;
       display: flex;
       flex-direction: column;
+      overflow-y: auto;
       text-align: ${currentLang === 'ar' ? 'right' : 'left'};
       direction: ${currentLang === 'ar' ? 'rtl' : 'ltr'};
+      @media (max-width: 767px) {
+        width: 100%;
+      }
     `;
 
     // Close button
@@ -739,6 +732,7 @@
       justify-content: center;
       color: #666;
       transition: all 0.2s;
+      z-index: 10;
       &:hover {
         background-color: #f3f4f6;
         color: #000;
