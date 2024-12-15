@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.2.1
+// src/scripts/quickView.js v2.2.2
 
 (function() {
   console.log('Quick View script initialized');
@@ -623,6 +623,14 @@
       existingModal.remove();
     }
 
+    // Add viewport meta tag if it doesn't exist
+    if (!document.querySelector('meta[name="viewport"]')) {
+      const viewport = document.createElement('meta');
+      viewport.name = 'viewport';
+      viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0';
+      document.head.appendChild(viewport);
+    }
+
     const modal = document.createElement('div');
     modal.className = 'quick-view-modal';
     modal.style.cssText = `
@@ -636,7 +644,7 @@
       justify-content: center;
       align-items: center;
       z-index: 1000;
-      padding: 20px;
+      padding: 16px;
     `;
 
     const content = document.createElement('div');
@@ -644,14 +652,14 @@
     content.style.cssText = `
       background-color: white;
       border-radius: 12px;
-      max-width: 1000px;
       width: 95%;
-      max-height: 90vh;
+      height: 90vh;
       position: relative;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      overflow: hidden;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      max-width: 1000px;
     `;
 
     // Create form
@@ -659,34 +667,52 @@
     form.id = 'product-form';
     form.style.cssText = `
       display: flex;
-      flex-direction: row;
       width: 100%;
       height: 100%;
-      @media (max-width: 767px) {
-        flex-direction: column;
+      flex-direction: column;
+    `;
+
+    // Add media query styles
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = `
+      @media screen and (min-width: 768px) {
+        .quick-view-form {
+          flex-direction: row !important;
+        }
+        .quick-view-gallery {
+          width: 50% !important;
+          border-right: 1px solid #e5e7eb !important;
+          border-bottom: none !important;
+        }
+        .quick-view-details {
+          width: 50% !important;
+        }
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
       }
     `;
+    document.head.appendChild(styleSheet);
+
+    form.className = 'quick-view-form';
     content.appendChild(form);
 
     // Left side - Image Gallery
     const gallerySection = document.createElement('div');
+    gallerySection.className = 'quick-view-gallery';
     gallerySection.style.cssText = `
-      width: 50%;
-      padding: 24px;
-      border-right: 1px solid #e5e7eb;
+      width: 100%;
+      padding: 20px;
+      border-bottom: 1px solid #e5e7eb;
       overflow-y: auto;
-      @media (max-width: 767px) {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid #e5e7eb;
-      }
+      max-height: 50vh;
     `;
 
     // Create and append the image gallery
     if (productData.images && productData.images.length > 0) {
       const gallery = createImageGallery(productData.images);
       gallery.style.cssText = `
-        height: 100%;
         display: flex;
         flex-direction: column;
         gap: 16px;
@@ -696,17 +722,16 @@
 
     // Right side - Product Details
     const detailsSection = document.createElement('div');
+    detailsSection.className = 'quick-view-details';
     detailsSection.style.cssText = `
-      width: 50%;
-      padding: 24px;
+      width: 100%;
+      padding: 20px;
       display: flex;
       flex-direction: column;
       overflow-y: auto;
       text-align: ${currentLang === 'ar' ? 'right' : 'left'};
       direction: ${currentLang === 'ar' ? 'rtl' : 'ltr'};
-      @media (max-width: 767px) {
-        width: 100%;
-      }
+      max-height: 50vh;
     `;
 
     // Close button
@@ -719,9 +744,9 @@
     `;
     closeBtn.style.cssText = `
       position: absolute;
-      top: 16px;
-      right: ${currentLang === 'ar' ? 'auto' : '16px'};
-      left: ${currentLang === 'ar' ? '16px' : 'auto'};
+      top: 12px;
+      right: ${currentLang === 'ar' ? 'auto' : '12px'};
+      left: ${currentLang === 'ar' ? '12px' : 'auto'};
       background: none;
       border: none;
       cursor: pointer;
@@ -733,6 +758,8 @@
       color: #666;
       transition: all 0.2s;
       z-index: 10;
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       &:hover {
         background-color: #f3f4f6;
         color: #000;
@@ -746,7 +773,7 @@
     title.textContent = productData.name[currentLang] || productData.name;
     title.style.cssText = `
       margin: 0 0 16px 0;
-      font-size: 24px;
+      font-size: 20px;
       font-weight: 600;
       color: #111827;
       line-height: 1.3;
@@ -759,13 +786,13 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     `;
 
     const currentPrice = document.createElement('span');
     currentPrice.id = 'product-price';
     currentPrice.style.cssText = `
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 700;
       color: #059669;
     `;
@@ -775,7 +802,7 @@
     oldPrice.style.cssText = `
       text-decoration: line-through;
       color: #6b7280;
-      font-size: 18px;
+      font-size: 16px;
       display: none;
     `;
 
@@ -787,10 +814,13 @@
     if (productData.variants && productData.variants.length > 0) {
       const variantsSection = createVariantsSection(productData);
       variantsSection.style.cssText += `
-        margin-bottom: 24px;
+        margin-bottom: 20px;
         display: flex;
         flex-direction: column;
         align-items: center;
+        max-width: 300px;
+        margin-left: auto;
+        margin-right: auto;
       `;
       detailsSection.appendChild(variantsSection);
     }
@@ -798,9 +828,12 @@
     // Add quantity selector
     const quantitySelector = createQuantitySelector(currentLang);
     quantitySelector.style.cssText += `
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       display: flex;
       justify-content: center;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
     `;
     detailsSection.appendChild(quantitySelector);
 
@@ -808,10 +841,10 @@
     if (productData.description && productData.description[currentLang]) {
       const description = document.createElement('p');
       description.style.cssText = `
-        margin-bottom: 24px;
+        margin-bottom: 20px;
         line-height: 1.6;
         color: #4b5563;
-        font-size: 15px;
+        font-size: 14px;
       `;
       description.textContent = productData.description[currentLang];
       detailsSection.appendChild(description);
@@ -823,7 +856,7 @@
       display: flex;
       gap: 12px;
       margin-top: auto;
-      padding-top: 24px;
+      padding-top: 20px;
       border-top: 1px solid #e5e7eb;
     `;
 
@@ -834,7 +867,7 @@
     addToCartBtn.type = 'button';
     addToCartBtn.style.cssText = `
       flex: 1;
-      padding: 12px 24px;
+      padding: 12px 20px;
       background-color: #059669;
       color: white;
       border: none;
@@ -864,16 +897,6 @@
       animation: spin 0.8s linear infinite;
     `;
     addToCartBtn.appendChild(loadingSpinner);
-
-    // Add keyframe animation for spinner
-    const styleSheet = document.createElement('style');
-    styleSheet.textContent = `
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    `;
-    document.head.appendChild(styleSheet);
 
     addToCartBtn.addEventListener('click', () => {
       handleAddToCart(productData);
