@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.2.4
+// src/scripts/quickView.js v2.2.5
 
 (function() {
   console.log('Quick View script initialized');
@@ -714,7 +714,6 @@
     gallerySection.style.cssText = `
       width: 100%;
       padding: 20px;
-      border-bottom: 1px solid #e5e7eb;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -838,37 +837,70 @@
 
     // Add quantity selector
     const quantitySelector = createQuantitySelector(currentLang);
-    quantitySelector.style.cssText += `
-      margin-bottom: 20px;
+    quantitySelector.style.cssText = `
+      margin-bottom: 12px;
       display: flex;
       justify-content: center;
-      max-width: 300px;
-      margin-left: auto;
-      margin-right: auto;
+      width: 100%;
     `;
-    detailsSection.appendChild(quantitySelector);
 
-    // Add description
-    if (productData.description && productData.description[currentLang]) {
-      const description = document.createElement('p');
-      description.style.cssText = `
-        margin-bottom: 20px;
-        line-height: 1.5;
-        color: #4b5563;
-        font-size: 13px;
-      `;
-      description.textContent = productData.description[currentLang];
-      detailsSection.appendChild(description);
+    // Remove the quantity label
+    const quantityLabel = quantitySelector.querySelector('label');
+    if (quantityLabel) {
+      quantityLabel.remove();
     }
+
+    // Style the quantity input and buttons
+    const quantityWrapper = quantitySelector.querySelector('div');
+    if (quantityWrapper) {
+      quantityWrapper.style.cssText = `
+        display: flex;
+        width: 100%;
+        height: 48px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+      `;
+
+      const decreaseBtn = quantityWrapper.querySelector('button:first-child');
+      const increaseBtn = quantityWrapper.querySelector('button:last-child');
+      const quantityInput = quantityWrapper.querySelector('input');
+
+      if (decreaseBtn && increaseBtn && quantityInput) {
+        const buttonStyle = `
+          width: 48px;
+          height: 100%;
+          background-color: #f3f4f6;
+          border: none;
+          font-size: 18px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        `;
+        decreaseBtn.style.cssText = buttonStyle;
+        increaseBtn.style.cssText = buttonStyle;
+
+        quantityInput.style.cssText = `
+          flex: 1;
+          height: 100%;
+          border: none;
+          text-align: center;
+          font-size: 16px;
+          -moz-appearance: textfield;
+        `;
+      }
+    }
+
 
     // Add buttons container
     const buttonsContainer = document.createElement('div');
     buttonsContainer.style.cssText = `
       display: flex;
+      flex-direction: column;
       gap: 12px;
       margin-top: auto;
       padding-top: 20px;
-      border-top: 1px solid #e5e7eb;
     `;
 
     // Add to Cart button
@@ -877,7 +909,7 @@
     addToCartBtn.className = 'btn btn-primary add-to-cart-btn';
     addToCartBtn.type = 'button';
     addToCartBtn.style.cssText = `
-      flex: 1;
+      width: 100%;
       padding: 12px 20px;
       background-color: #059669;
       color: white;
@@ -891,6 +923,7 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
+      height: 48px;
       &:hover {
         background-color: #047857;
       }
@@ -913,6 +946,8 @@
       handleAddToCart(productData);
     });
 
+    // Move quantitySelector inside buttonsContainer
+    buttonsContainer.appendChild(quantitySelector);
     buttonsContainer.appendChild(addToCartBtn);
     detailsSection.appendChild(buttonsContainer);
 
