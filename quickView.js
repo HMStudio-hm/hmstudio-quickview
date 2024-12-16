@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.2.5
+// src/scripts/quickView.js v2.2.6
 
 (function() {
   console.log('Quick View script initialized');
@@ -605,7 +605,7 @@
   async function displayQuickViewModal(productData) {
     const currentLang = getCurrentLanguage();
     console.log('Displaying Quick View modal for product:', productData);
-
+  
     // Track modal open event
     try {
       await QuickViewStats.trackEvent('modal_open', {
@@ -622,7 +622,7 @@
     if (existingModal) {
       existingModal.remove();
     }
-
+  
     // Add viewport meta tag if it doesn't exist
     if (!document.querySelector('meta[name="viewport"]')) {
       const viewport = document.createElement('meta');
@@ -630,7 +630,7 @@
       viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0';
       document.head.appendChild(viewport);
     }
-
+  
     const modal = document.createElement('div');
     modal.className = 'quick-view-modal';
     modal.style.cssText = `
@@ -646,7 +646,7 @@
       z-index: 1000;
       padding: 16px;
     `;
-
+  
     const content = document.createElement('div');
     content.className = 'quick-view-content';
     content.style.cssText = `
@@ -661,7 +661,7 @@
       max-width: 1000px;
       overflow: hidden;
     `;
-
+  
     // Create form
     const form = document.createElement('form');
     form.id = 'product-form';
@@ -672,7 +672,7 @@
       flex-direction: column;
       overflow-y: auto;
     `;
-
+  
     // Add media query styles
     const styleSheet = document.createElement('style');
     styleSheet.textContent = `
@@ -683,7 +683,6 @@
         }
         .quick-view-gallery {
           width: 50% !important;
-          border-right: 1px solid #e5e7eb !important;
           border-bottom: none !important;
           display: flex !important;
           flex-direction: column !important;
@@ -704,21 +703,22 @@
       }
     `;
     document.head.appendChild(styleSheet);
-
+  
     form.className = 'quick-view-form';
     content.appendChild(form);
-
+  
     // Left side - Image Gallery
     const gallerySection = document.createElement('div');
     gallerySection.className = 'quick-view-gallery';
     gallerySection.style.cssText = `
       width: 100%;
       padding: 20px;
+      border-bottom: 1px solid #e5e7eb;
       display: flex;
       flex-direction: column;
       align-items: center;
     `;
-
+  
     // Create and append the image gallery
     if (productData.images && productData.images.length > 0) {
       const gallery = createImageGallery(productData.images);
@@ -731,7 +731,7 @@
       `;
       gallerySection.appendChild(gallery);
     }
-
+  
     // Right side - Product Details
     const detailsSection = document.createElement('div');
     detailsSection.className = 'quick-view-details';
@@ -743,7 +743,7 @@
       text-align: ${currentLang === 'ar' ? 'right' : 'left'};
       direction: ${currentLang === 'ar' ? 'rtl' : 'ltr'};
     `;
-
+  
     // Close button
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = `
@@ -777,7 +777,7 @@
     `;
     closeBtn.addEventListener('click', () => modal.remove());
     content.appendChild(closeBtn);
-
+  
     // Create and append the title
     const title = document.createElement('h2');
     title.textContent = productData.name[currentLang] || productData.name;
@@ -789,7 +789,7 @@
       line-height: 1.3;
     `;
     detailsSection.appendChild(title);
-
+  
     // Add price display elements
     const priceContainer = document.createElement('div');
     priceContainer.style.cssText = `
@@ -798,7 +798,7 @@
       gap: 12px;
       margin-bottom: 20px;
     `;
-
+  
     const currentPrice = document.createElement('span');
     currentPrice.id = 'product-price';
     currentPrice.style.cssText = `
@@ -806,7 +806,7 @@
       font-weight: 700;
       color: #059669;
     `;
-
+  
     const oldPrice = document.createElement('span');
     oldPrice.id = 'product-old-price';
     oldPrice.style.cssText = `
@@ -815,11 +815,11 @@
       font-size: 16px;
       display: none;
     `;
-
+  
     priceContainer.appendChild(currentPrice);
     priceContainer.appendChild(oldPrice);
     detailsSection.appendChild(priceContainer);
-
+  
     // Add variants section if product has variants
     if (productData.variants && productData.variants.length > 0) {
       const variantsSection = createVariantsSection(productData);
@@ -834,65 +834,20 @@
       `;
       detailsSection.appendChild(variantsSection);
     }
-
-    // Add quantity selector
-    const quantitySelector = createQuantitySelector(currentLang);
-    quantitySelector.style.cssText = `
-      margin-bottom: 12px;
-      display: flex;
-      justify-content: center;
-      width: 100%;
-    `;
-
-    // Remove the quantity label
-    const quantityLabel = quantitySelector.querySelector('label');
-    if (quantityLabel) {
-      quantityLabel.remove();
-    }
-
-    // Style the quantity input and buttons
-    const quantityWrapper = quantitySelector.querySelector('div');
-    if (quantityWrapper) {
-      quantityWrapper.style.cssText = `
-        display: flex;
-        width: 100%;
-        height: 48px;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        overflow: hidden;
+  
+    // Add description
+    if (productData.description && productData.description[currentLang]) {
+      const description = document.createElement('p');
+      description.style.cssText = `
+        margin-bottom: 20px;
+        line-height: 1.5;
+        color: #4b5563;
+        font-size: 13px;
       `;
-
-      const decreaseBtn = quantityWrapper.querySelector('button:first-child');
-      const increaseBtn = quantityWrapper.querySelector('button:last-child');
-      const quantityInput = quantityWrapper.querySelector('input');
-
-      if (decreaseBtn && increaseBtn && quantityInput) {
-        const buttonStyle = `
-          width: 48px;
-          height: 100%;
-          background-color: #f3f4f6;
-          border: none;
-          font-size: 18px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        `;
-        decreaseBtn.style.cssText = buttonStyle;
-        increaseBtn.style.cssText = buttonStyle;
-
-        quantityInput.style.cssText = `
-          flex: 1;
-          height: 100%;
-          border: none;
-          text-align: center;
-          font-size: 16px;
-          -moz-appearance: textfield;
-        `;
-      }
+      description.textContent = productData.description[currentLang];
+      detailsSection.appendChild(description);
     }
-
-
+  
     // Add buttons container
     const buttonsContainer = document.createElement('div');
     buttonsContainer.style.cssText = `
@@ -901,8 +856,27 @@
       gap: 12px;
       margin-top: auto;
       padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
     `;
-
+  
+    // Add quantity selector
+    const quantitySelector = createQuantitySelector(currentLang);
+    quantitySelector.style.cssText += `
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      height: 48px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      overflow: hidden;
+    `;
+    
+    // Remove the "الكمية" text
+    quantitySelector.querySelector('label').remove();
+  
+    buttonsContainer.appendChild(quantitySelector);
+  
     // Add to Cart button
     const addToCartBtn = document.createElement('button');
     addToCartBtn.textContent = currentLang === 'ar' ? 'أضف إلى السلة' : 'Add to Cart';
@@ -928,7 +902,7 @@
         background-color: #047857;
       }
     `;
-
+  
     // Add loading spinner
     const loadingSpinner = document.createElement('div');
     loadingSpinner.className = 'add-to-cart-progress d-none';
@@ -941,16 +915,14 @@
       animation: spin 0.8s linear infinite;
     `;
     addToCartBtn.appendChild(loadingSpinner);
-
+  
     addToCartBtn.addEventListener('click', () => {
       handleAddToCart(productData);
     });
-
-    // Move quantitySelector inside buttonsContainer
-    buttonsContainer.appendChild(quantitySelector);
+  
     buttonsContainer.appendChild(addToCartBtn);
     detailsSection.appendChild(buttonsContainer);
-
+  
     // Add hidden inputs
     const productIdInput = document.createElement('input');
     productIdInput.type = 'hidden';
@@ -958,19 +930,19 @@
     productIdInput.name = 'product_id';
     productIdInput.value = productData.id;
     form.appendChild(productIdInput);
-
+  
     // Assemble the modal
     form.appendChild(gallerySection);
     form.appendChild(detailsSection);
     modal.appendChild(content);
-
+  
     // Close modal when clicking outside
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.remove();
       }
     });
-
+  
     document.body.appendChild(modal);
     
     // Initialize price display
@@ -979,9 +951,11 @@
     } else {
       currentPrice.textContent = productData.formatted_price || productData.price;
     }
-
+  
     console.log('Quick View modal added to DOM');
   }
+  
+  
 
 
   async function openQuickView(productId) {
