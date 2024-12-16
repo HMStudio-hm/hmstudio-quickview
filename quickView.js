@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.2.8
+// src/scripts/quickView.js v2.2.9
 
 (function() {
   console.log('Quick View script initialized');
@@ -744,15 +744,49 @@
       direction: ${currentLang === 'ar' ? 'rtl' : 'ltr'};
     `;
   
-    // Title and rating section
-    const titleSection = document.createElement('div');
-    titleSection.className = 'flex flex-col gap-2';
-    
+    // Close button
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    `;
+    closeBtn.style.cssText = `
+      position: absolute;
+      top: 12px;
+      right: ${currentLang === 'ar' ? 'auto' : '12px'};
+      left: ${currentLang === 'ar' ? '12px' : 'auto'};
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      transition: all 0.2s;
+      z-index: 10;
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      &:hover {
+        background-color: #f3f4f6;
+        color: #000;
+      }
+    `;
+    closeBtn.addEventListener('click', () => modal.remove());
+    content.appendChild(closeBtn);
+  
+    // Create title container with rating
+    const titleContainer = document.createElement('div');
+    titleContainer.className = 'flex flex-col gap-2';
+  
     // Title
     const title = document.createElement('h2');
     title.className = 'text-xl font-semibold text-gray-900 mb-1';
     title.textContent = productData.name[currentLang] || productData.name;
-    titleSection.appendChild(title);
+    titleContainer.appendChild(title);
   
     // Rating
     const ratingContainer = document.createElement('div');
@@ -760,7 +794,6 @@
     const rating = productData.rating?.average || 0;
     const totalRatings = productData.rating?.total_count || 0;
   
-    // Create star rating
     const starsContainer = document.createElement('div');
     starsContainer.className = 'flex items-center gap-0.5';
     for (let i = 0; i < 5; i++) {
@@ -777,29 +810,34 @@
   
     ratingContainer.appendChild(starsContainer);
     ratingContainer.appendChild(ratingText);
+    titleContainer.appendChild(ratingContainer);
   
-    // Add short description
+    detailsSection.appendChild(titleContainer);
+  
+    // Short description
     if (productData.short_description && productData.short_description[currentLang]) {
       const description = document.createElement('p');
-      description.className = 'text-sm text-gray-600 mb-4 mt-2';
+      description.className = 'text-sm text-gray-600 mb-4';
       description.textContent = productData.short_description[currentLang];
       detailsSection.appendChild(description);
     }
   
-    // Price section
+    // Price container
     const priceContainer = document.createElement('div');
     priceContainer.className = 'flex items-center gap-2 mb-4';
-  
+    
     if (productData.sale_price) {
       // Sale price
       const salePrice = document.createElement('span');
       salePrice.className = 'text-xl font-bold text-green-600';
-      salePrice.textContent = `${productData.formatted_sale_price} ${currencySymbol}`;
+      salePrice.id = 'product-price';
+      salePrice.textContent = `${productData.sale_price} ${currencySymbol}`;
       
       // Original price (strikethrough)
       const originalPrice = document.createElement('span');
       originalPrice.className = 'text-sm text-gray-400 line-through';
-      originalPrice.textContent = `${productData.formatted_price} ${currencySymbol}`;
+      originalPrice.id = 'product-old-price';
+      originalPrice.textContent = `${productData.price} ${currencySymbol}`;
       
       priceContainer.appendChild(salePrice);
       priceContainer.appendChild(originalPrice);
@@ -807,12 +845,11 @@
       // Regular price
       const price = document.createElement('span');
       price.className = 'text-xl font-bold text-gray-900';
-      price.textContent = `${productData.formatted_price} ${currencySymbol}`;
+      price.id = 'product-price';
+      price.textContent = `${productData.price} ${currencySymbol}`;
       priceContainer.appendChild(price);
     }
-  
-    detailsSection.appendChild(titleSection);
-    detailsSection.appendChild(ratingContainer);
+    
     detailsSection.appendChild(priceContainer);
   
     // Add variants section if product has variants
@@ -839,41 +876,13 @@
       width: 100%;
     `;
   
-    // Close button
-    const closeBtn = document.createElement('button');
-    closeBtn.innerHTML = `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
-    `;
-    closeBtn.style.cssText = `
-      position: absolute;
-      top: 12px;
-      right: ${currentLang === 'ar' ? 'auto' : '12px'};
-      left: ${currentLang === 'ar' ? '12px' : 'auto'};
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 4px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-center: center;
-      color: #666;
-      transition: all 0.2s;
-      z-index: 10;
-      background-color: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      &:hover {
-        background-color: #f3f4f6;
-        color: #000;
-      }
-    `;
-    closeBtn.addEventListener('click', () => modal.remove());
-    content.appendChild(closeBtn);
+    // Remove the quantity label
+    const quantityLabel = quantitySelector.querySelector('label');
+    if (quantityLabel) {
+      quantityLabel.remove();
+    }
   
-    // Add to Cart button
+    // Add buttons container
     const buttonsContainer = document.createElement('div');
     buttonsContainer.className = 'quick-view-purchase-controls';
     buttonsContainer.style.cssText = `
@@ -884,6 +893,7 @@
       padding-top: 20px;
     `;
   
+    // Add to Cart button
     const addToCartBtn = document.createElement('button');
     addToCartBtn.textContent = currentLang === 'ar' ? 'أضف إلى السلة' : 'Add to Cart';
     addToCartBtn.className = 'btn btn-primary add-to-cart-btn quick-view-add-to-cart-btn';
@@ -909,6 +919,7 @@
       }
     `;
   
+    // Add loading spinner
     const loadingSpinner = document.createElement('div');
     loadingSpinner.className = 'add-to-cart-progress d-none';
     loadingSpinner.style.cssText = `
@@ -925,10 +936,12 @@
       handleAddToCart(productData);
     });
   
+    // Move quantitySelector inside buttonsContainer
     buttonsContainer.appendChild(quantitySelector);
     buttonsContainer.appendChild(addToCartBtn);
     detailsSection.appendChild(buttonsContainer);
   
+    // Add hidden inputs
     const productIdInput = document.createElement('input');
     productIdInput.type = 'hidden';
     productIdInput.id = 'product-id';
@@ -936,10 +949,12 @@
     productIdInput.value = productData.id;
     form.appendChild(productIdInput);
   
+    // Assemble the modal
     form.appendChild(gallerySection);
     form.appendChild(detailsSection);
     modal.appendChild(content);
   
+    // Close modal when clicking outside
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.remove();
@@ -948,13 +963,9 @@
   
     document.body.appendChild(modal);
     
+    // Initialize price display
     if (productData.selected_product) {
       updateSelectedVariant(productData);
-    } else {
-      const currentPrice = document.getElementById('product-price');
-      if (currentPrice) {
-        currentPrice.textContent = productData.formatted_price || productData.price;
-      }
     }
   
     console.log('Quick View modal added to DOM');
