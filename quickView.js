@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.2.9
+// src/scripts/quickView.js v2.3.0
 
 (function() {
   console.log('Quick View script initialized');
@@ -604,9 +604,8 @@
 
   async function displayQuickViewModal(productData) {
     const currentLang = getCurrentLanguage();
-    const currencySymbol = currentLang === 'ar' ? 'ر.س' : 'SAR';
     console.log('Displaying Quick View modal for product:', productData);
-  
+
     // Track modal open event
     try {
       await QuickViewStats.trackEvent('modal_open', {
@@ -623,7 +622,7 @@
     if (existingModal) {
       existingModal.remove();
     }
-  
+
     // Add viewport meta tag if it doesn't exist
     if (!document.querySelector('meta[name="viewport"]')) {
       const viewport = document.createElement('meta');
@@ -631,7 +630,7 @@
       viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0';
       document.head.appendChild(viewport);
     }
-  
+
     const modal = document.createElement('div');
     modal.className = 'quick-view-modal';
     modal.style.cssText = `
@@ -647,7 +646,7 @@
       z-index: 1000;
       padding: 16px;
     `;
-  
+
     const content = document.createElement('div');
     content.className = 'quick-view-content';
     content.style.cssText = `
@@ -662,7 +661,7 @@
       max-width: 1000px;
       overflow: hidden;
     `;
-  
+
     // Create form
     const form = document.createElement('form');
     form.id = 'product-form';
@@ -673,7 +672,7 @@
       flex-direction: column;
       overflow-y: auto;
     `;
-  
+
     // Add media query styles
     const styleSheet = document.createElement('style');
     styleSheet.textContent = `
@@ -684,6 +683,7 @@
         }
         .quick-view-gallery {
           width: 50% !important;
+          border-right: 1px solid #e5e7eb !important;
           border-bottom: none !important;
           display: flex !important;
           flex-direction: column !important;
@@ -704,10 +704,10 @@
       }
     `;
     document.head.appendChild(styleSheet);
-  
+
     form.className = 'quick-view-form';
     content.appendChild(form);
-  
+
     // Left side - Image Gallery
     const gallerySection = document.createElement('div');
     gallerySection.className = 'quick-view-gallery';
@@ -718,7 +718,7 @@
       flex-direction: column;
       align-items: center;
     `;
-  
+
     // Create and append the image gallery
     if (productData.images && productData.images.length > 0) {
       const gallery = createImageGallery(productData.images);
@@ -731,7 +731,7 @@
       `;
       gallerySection.appendChild(gallery);
     }
-  
+
     // Right side - Product Details
     const detailsSection = document.createElement('div');
     detailsSection.className = 'quick-view-details';
@@ -743,7 +743,7 @@
       text-align: ${currentLang === 'ar' ? 'right' : 'left'};
       direction: ${currentLang === 'ar' ? 'rtl' : 'ltr'};
     `;
-  
+
     // Close button
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = `
@@ -777,81 +777,125 @@
     `;
     closeBtn.addEventListener('click', () => modal.remove());
     content.appendChild(closeBtn);
-  
-    // Create title container with rating
-    const titleContainer = document.createElement('div');
-    titleContainer.className = 'flex flex-col gap-2';
-  
-    // Title
+
+    // Create and append the title
     const title = document.createElement('h2');
-    title.className = 'text-xl font-semibold text-gray-900 mb-1';
+    title.className = 'quick-view-title';
     title.textContent = productData.name[currentLang] || productData.name;
-    titleContainer.appendChild(title);
-  
-    // Rating
-    const ratingContainer = document.createElement('div');
-    ratingContainer.className = 'flex items-center gap-1 mb-3';
-    const rating = productData.rating?.average || 0;
-    const totalRatings = productData.rating?.total_count || 0;
-  
-    const starsContainer = document.createElement('div');
-    starsContainer.className = 'flex items-center gap-0.5';
-    for (let i = 0; i < 5; i++) {
-      const star = document.createElement('span');
-      star.className = 'text-sm';
-      star.textContent = i < Math.floor(rating) ? '★' : '☆';
-      star.style.color = i < Math.floor(rating) ? '#FFB800' : '#D1D5DB';
-      starsContainer.appendChild(star);
+    title.style.cssText = `
+      margin: 0 0 12px 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: #111827;
+      line-height: 1.3;
+    `;
+    detailsSection.appendChild(title);
+
+    // Add rating if available
+    if (productData.rating) {
+      const ratingContainer = document.createElement('div');
+      ratingContainer.className = 'quick-view-rating';
+      ratingContainer.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        font-size: 14px;
+      `;
+
+      const starRating = document.createElement('div');
+      starRating.style.cssText = `
+        display: flex;
+        align-items: center;
+      `;
+
+      const fullStars = Math.floor(productData.rating.average);
+      const remainingStars = 5 - fullStars;
+
+      for (let i = 0; i < fullStars; i++) {
+        const star = document.createElement('span');
+        star.textContent = '★';
+        star.style.color = '#fbbf24';
+        starRating.appendChild(star);
+      }
+
+      for (let i = 0; i < remainingStars; i++) {
+        const star = document.createElement('span');
+        star.textContent = '☆';
+        star.style.color = '#e5e7eb';
+        starRating.appendChild(star);
+      }
+
+      const ratingText = document.createElement('span');
+      ratingText.textContent = `(${productData.rating.average.toFixed(1)})`;
+      ratingText.style.color = '#6b7280';
+
+      ratingContainer.appendChild(starRating);
+      ratingContainer.appendChild(ratingText);
+      detailsSection.appendChild(ratingContainer);
     }
-  
-    const ratingText = document.createElement('span');
-    ratingText.className = 'text-xs text-gray-500 ml-2';
-    ratingText.textContent = `(${totalRatings} ${currentLang === 'ar' ? 'تقييم' : 'ratings'})`;
-  
-    ratingContainer.appendChild(starsContainer);
-    ratingContainer.appendChild(ratingText);
-    titleContainer.appendChild(ratingContainer);
-  
-    detailsSection.appendChild(titleContainer);
-  
-    // Short description
-    if (productData.short_description && productData.short_description[currentLang]) {
-      const description = document.createElement('p');
-      description.className = 'text-sm text-gray-600 mb-4';
-      description.textContent = productData.short_description[currentLang];
-      detailsSection.appendChild(description);
-    }
-  
-    // Price container
+
+    // Add price display elements
     const priceContainer = document.createElement('div');
-    priceContainer.className = 'flex items-center gap-2 mb-4';
-    
+    priceContainer.className = 'quick-view-price-container';
+    priceContainer.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    `;
+
+    const currencySymbol = currentLang === 'ar' ? 'ر.س' : 'SAR';
+
     if (productData.sale_price) {
-      // Sale price
       const salePrice = document.createElement('span');
-      salePrice.className = 'text-xl font-bold text-green-600';
-      salePrice.id = 'product-price';
+      salePrice.className = 'quick-view-sale-price';
+      salePrice.style.cssText = `
+        font-size: 24px;
+        font-weight: 700;
+        color: #059669;
+      `;
       salePrice.textContent = `${productData.sale_price} ${currencySymbol}`;
-      
-      // Original price (strikethrough)
+
       const originalPrice = document.createElement('span');
-      originalPrice.className = 'text-sm text-gray-400 line-through';
-      originalPrice.id = 'product-old-price';
+      originalPrice.className = 'quick-view-original-price';
+      originalPrice.style.cssText = `
+        text-decoration: line-through;
+        color: #6b7280;
+        font-size: 16px;
+      `;
       originalPrice.textContent = `${productData.price} ${currencySymbol}`;
-      
+
       priceContainer.appendChild(salePrice);
       priceContainer.appendChild(originalPrice);
     } else {
-      // Regular price
       const price = document.createElement('span');
-      price.className = 'text-xl font-bold text-gray-900';
-      price.id = 'product-price';
+      price.className = 'quick-view-current-price';
+      price.style.cssText = `
+        font-size: 24px;
+        font-weight: 700;
+        color: #059669;
+      `;
       price.textContent = `${productData.price} ${currencySymbol}`;
       priceContainer.appendChild(price);
     }
-    
+
     detailsSection.appendChild(priceContainer);
-  
+
+    // Add short description
+    if (productData.short_description && productData.short_description[currentLang]) {
+      const description = document.createElement('p');
+      description.className = 'quick-view-description';
+      description.style.cssText = `
+        margin-bottom: 20px;
+        line-height: 1.5;
+        color: #4b5563;
+        font-size: 14px;
+      `;
+      description.textContent = productData.short_description[currentLang];
+      detailsSection.appendChild(description);
+    }
+
     // Add variants section if product has variants
     if (productData.variants && productData.variants.length > 0) {
       const variantsSection = createVariantsSection(productData);
@@ -866,22 +910,65 @@
       `;
       detailsSection.appendChild(variantsSection);
     }
-  
+
     // Add quantity selector
     const quantitySelector = createQuantitySelector(currentLang);
     quantitySelector.className = 'quick-view-quantity-selector';
     quantitySelector.style.cssText = `
+      margin-bottom: 12px;
       display: flex;
       justify-content: center;
       width: 100%;
     `;
-  
+
     // Remove the quantity label
     const quantityLabel = quantitySelector.querySelector('label');
     if (quantityLabel) {
       quantityLabel.remove();
     }
-  
+
+    // Style the quantity input and buttons
+    const quantityWrapper = quantitySelector.querySelector('div');
+    if (quantityWrapper) {
+      quantityWrapper.style.cssText = `
+        display: flex;
+        width: 100%;
+        height: 48px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+      `;
+
+      const decreaseBtn = quantityWrapper.querySelector('button:first-child');
+      const increaseBtn = quantityWrapper.querySelector('button:last-child');
+      const quantityInput = quantityWrapper.querySelector('input');
+
+      if (decreaseBtn && increaseBtn && quantityInput) {
+        const buttonStyle = `
+          width: 48px;
+          height: 100%;
+          background-color: #f3f4f6;
+          border: none;
+          font-size: 18px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        `;
+        decreaseBtn.style.cssText = buttonStyle;
+        increaseBtn.style.cssText = buttonStyle;
+
+        quantityInput.style.cssText = `
+          flex: 1;
+          height: 100%;
+          border: none;
+          text-align: center;
+          font-size: 16px;
+          -moz-appearance: textfield;
+        `;
+      }
+    }
+
     // Add buttons container
     const buttonsContainer = document.createElement('div');
     buttonsContainer.className = 'quick-view-purchase-controls';
@@ -892,7 +979,7 @@
       margin-top: auto;
       padding-top: 20px;
     `;
-  
+
     // Add to Cart button
     const addToCartBtn = document.createElement('button');
     addToCartBtn.textContent = currentLang === 'ar' ? 'أضف إلى السلة' : 'Add to Cart';
@@ -918,7 +1005,7 @@
         background-color: #047857;
       }
     `;
-  
+
     // Add loading spinner
     const loadingSpinner = document.createElement('div');
     loadingSpinner.className = 'add-to-cart-progress d-none';
@@ -931,16 +1018,16 @@
       animation: spin 0.8s linear infinite;
     `;
     addToCartBtn.appendChild(loadingSpinner);
-  
+
     addToCartBtn.addEventListener('click', () => {
       handleAddToCart(productData);
     });
-  
+
     // Move quantitySelector inside buttonsContainer
     buttonsContainer.appendChild(quantitySelector);
     buttonsContainer.appendChild(addToCartBtn);
     detailsSection.appendChild(buttonsContainer);
-  
+
     // Add hidden inputs
     const productIdInput = document.createElement('input');
     productIdInput.type = 'hidden';
@@ -948,26 +1035,26 @@
     productIdInput.name = 'product_id';
     productIdInput.value = productData.id;
     form.appendChild(productIdInput);
-  
+
     // Assemble the modal
     form.appendChild(gallerySection);
     form.appendChild(detailsSection);
     modal.appendChild(content);
-  
+
     // Close modal when clicking outside
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.remove();
       }
     });
-  
+
     document.body.appendChild(modal);
     
     // Initialize price display
     if (productData.selected_product) {
       updateSelectedVariant(productData);
     }
-  
+
     console.log('Quick View modal added to DOM');
   }
   
