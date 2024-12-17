@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.3.0
+// src/scripts/quickView.js v2.3.1
 
 (function() {
   console.log('Quick View script initialized');
@@ -683,7 +683,6 @@
         }
         .quick-view-gallery {
           width: 50% !important;
-          border-right: 1px solid #e5e7eb !important;
           border-bottom: none !important;
           display: flex !important;
           flex-direction: column !important;
@@ -915,7 +914,6 @@
     const quantitySelector = createQuantitySelector(currentLang);
     quantitySelector.className = 'quick-view-quantity-selector';
     quantitySelector.style.cssText = `
-      margin-bottom: 12px;
       display: flex;
       justify-content: center;
       width: 100%;
