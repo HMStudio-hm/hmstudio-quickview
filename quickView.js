@@ -1,7 +1,29 @@
-// src/scripts/quickView.js v2.3.1
+// src/scripts/quickView.js v2.3.2
 
 (function() {
   console.log('Quick View script initialized');
+
+  // Get URL parameters
+  const scriptUrl = new URL(document.currentScript.src);
+  const enabled = scriptUrl.searchParams.get('enabled') === 'true';
+
+  // If feature is disabled, cleanup and exit
+  if (!enabled) {
+    console.log('Quick View is disabled, cleaning up...');
+    if (window.HMStudioQuickView) {
+      // Remove any existing event listeners
+      const existingButtons = document.querySelectorAll('.quick-view-btn');
+      existingButtons.forEach(button => button.remove());
+      
+      // Delete the global instance
+      delete window.HMStudioQuickView;
+    }
+    // Remove any existing modals
+    const existingModals = document.querySelectorAll('.quick-view-modal');
+    existingModals.forEach(modal => modal.remove());
+    
+    return;
+  }
 
   function getStoreIdFromUrl() {
     const scriptTag = document.currentScript;
