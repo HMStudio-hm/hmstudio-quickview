@@ -1,48 +1,28 @@
-// src/scripts/quickView.js v2.3.3
+// src/scripts/quickView.js v2.3.4
 
 (function() {
-  console.log('Quick View script initialized');
+  // First thing: check if enabled
+  const currentScript = document.currentScript;
+  const scriptUrl = new URL(currentScript.src);
+  const enabled = scriptUrl.searchParams.get('enabled') === 'true';
 
-  function getStoreIdFromUrl() {
-    const scriptTag = document.currentScript;
-    const scriptUrl = new URL(scriptTag.src);
-    const storeId = scriptUrl.searchParams.get('storeId');
-    return storeId ? storeId.split('?')[0] : null;
-  }
-
-  function cleanupQuickView() {
-    // Remove all quick view related elements
-    const quickViewButtons = document.querySelectorAll('.quick-view-btn');
-    quickViewButtons.forEach(button => button.remove());
-    
-    const quickViewModals = document.querySelectorAll('.quick-view-modal');
-    quickViewModals.forEach(modal => modal.remove());
-    
-    // Clear any event listeners
-    const observer = window.quickViewObserver;
-    if (observer) {
-      observer.disconnect();
-      delete window.quickViewObserver;
-    }
-    
-    // Clean up global objects
+  // If disabled, remove the script tag immediately
+  if (!enabled) {
+    console.log('Quick View is disabled, removing script...');
+    // Remove self
+    currentScript.remove();
+    // Remove any existing instance
     if (window.HMStudioQuickView) {
       delete window.HMStudioQuickView;
     }
-
-    console.log('Quick View cleanup completed');
+    return;
   }
 
-  // Check if the feature is enabled
-  const scriptTag = document.currentScript;
-  const scriptUrl = new URL(scriptTag.src);
-  const enabled = scriptUrl.searchParams.get('enabled') === 'true';
+  console.log('Quick View script initialized');
 
-  // If feature is disabled, clean up and exit
-  if (!enabled) {
-    console.log('Quick View feature is disabled, cleaning up...');
-    cleanupQuickView();
-    return;
+  function getStoreIdFromUrl() {
+    const storeId = scriptUrl.searchParams.get('storeId');
+    return storeId ? storeId.split('?')[0] : null;
   }
 
   function getCurrentLanguage() {
