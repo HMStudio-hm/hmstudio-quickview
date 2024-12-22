@@ -1,35 +1,48 @@
-// src/scripts/quickView.js v2.3.2
+// src/scripts/quickView.js v2.3.3
 
 (function() {
   console.log('Quick View script initialized');
-
-  // Get URL parameters
-  const scriptUrl = new URL(document.currentScript.src);
-  const enabled = scriptUrl.searchParams.get('enabled') === 'true';
-
-  // If feature is disabled, cleanup and exit
-  if (!enabled) {
-    console.log('Quick View is disabled, cleaning up...');
-    if (window.HMStudioQuickView) {
-      // Remove any existing event listeners
-      const existingButtons = document.querySelectorAll('.quick-view-btn');
-      existingButtons.forEach(button => button.remove());
-      
-      // Delete the global instance
-      delete window.HMStudioQuickView;
-    }
-    // Remove any existing modals
-    const existingModals = document.querySelectorAll('.quick-view-modal');
-    existingModals.forEach(modal => modal.remove());
-    
-    return;
-  }
 
   function getStoreIdFromUrl() {
     const scriptTag = document.currentScript;
     const scriptUrl = new URL(scriptTag.src);
     const storeId = scriptUrl.searchParams.get('storeId');
     return storeId ? storeId.split('?')[0] : null;
+  }
+
+  function cleanupQuickView() {
+    // Remove all quick view related elements
+    const quickViewButtons = document.querySelectorAll('.quick-view-btn');
+    quickViewButtons.forEach(button => button.remove());
+    
+    const quickViewModals = document.querySelectorAll('.quick-view-modal');
+    quickViewModals.forEach(modal => modal.remove());
+    
+    // Clear any event listeners
+    const observer = window.quickViewObserver;
+    if (observer) {
+      observer.disconnect();
+      delete window.quickViewObserver;
+    }
+    
+    // Clean up global objects
+    if (window.HMStudioQuickView) {
+      delete window.HMStudioQuickView;
+    }
+
+    console.log('Quick View cleanup completed');
+  }
+
+  // Check if the feature is enabled
+  const scriptTag = document.currentScript;
+  const scriptUrl = new URL(scriptTag.src);
+  const enabled = scriptUrl.searchParams.get('enabled') === 'true';
+
+  // If feature is disabled, clean up and exit
+  if (!enabled) {
+    console.log('Quick View feature is disabled, cleaning up...');
+    cleanupQuickView();
+    return;
   }
 
   function getCurrentLanguage() {
