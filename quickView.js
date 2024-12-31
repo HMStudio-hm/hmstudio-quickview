@@ -1,26 +1,11 @@
-// src/scripts/quickView.js v2.3.4
+// src/scripts/quickView.js v2.3.5
 
 (function() {
-  // First thing: check if enabled
-  const currentScript = document.currentScript;
-  const scriptUrl = new URL(currentScript.src);
-  const enabled = scriptUrl.searchParams.get('enabled') === 'true';
-
-  // If disabled, remove the script tag immediately
-  if (!enabled) {
-    console.log('Quick View is disabled, removing script...');
-    // Remove self
-    currentScript.remove();
-    // Remove any existing instance
-    if (window.HMStudioQuickView) {
-      delete window.HMStudioQuickView;
-    }
-    return;
-  }
-
   console.log('Quick View script initialized');
 
   function getStoreIdFromUrl() {
+    const scriptTag = document.currentScript;
+    const scriptUrl = new URL(scriptTag.src);
     const storeId = scriptUrl.searchParams.get('storeId');
     return storeId ? storeId.split('?')[0] : null;
   }
@@ -41,6 +26,33 @@
   };
 
   console.log('Quick View config:', config);
+
+  // Add cleanup functionality
+  if (!window.HMStudioQuickView) {
+    window.HMStudioQuickView = {};
+  }
+
+  window.HMStudioQuickView.cleanup = function() {
+    // Remove all quick view buttons
+    document.querySelectorAll('.quick-view-btn').forEach(btn => btn.remove());
+    
+    // Remove any existing modals
+    const modal = document.querySelector('.quick-view-modal');
+    if (modal) {
+      modal.remove();
+    }
+
+    // Remove any observers if they exist
+    if (window.HMStudioQuickView.observer) {
+      window.HMStudioQuickView.observer.disconnect();
+    }
+
+    // Clean up any remaining event listeners
+    document.removeEventListener('DOMContentLoaded', window.HMStudioQuickView.initialize);
+    window.removeEventListener('beforeunload', window.HMStudioQuickView.cleanup);
+
+    console.log('Quick View cleanup completed');
+  };
 
   // Add Analytics object
   const QuickViewStats = {
