@@ -1,5 +1,4 @@
-// src/scripts/quickView.js v2.3.6
-
+// src/scripts/quickView.js v2.3.7
 
 (function() {
   console.log('Quick View script initialized');
@@ -26,6 +25,7 @@ if (!window.HMStudioQuickView) {
   window.HMStudioQuickView = {};
 }
 
+// In src/scripts/quickView.js
 window.HMStudioQuickView.cleanup = function() {
   // Remove all quick view buttons
   document.querySelectorAll('.quick-view-btn').forEach(btn => btn.remove());
@@ -44,6 +44,21 @@ window.HMStudioQuickView.cleanup = function() {
   // Clean up any remaining event listeners
   document.removeEventListener('DOMContentLoaded', window.HMStudioQuickView.initialize);
   window.removeEventListener('beforeunload', window.HMStudioQuickView.cleanup);
+
+  // NEW: Remove the script tag itself
+  const scriptTags = document.querySelectorAll('script[src*="hmstudio-quickview"]');
+  scriptTags.forEach(script => script.remove());
+
+  // NEW: Clear any cached resources
+  if ('caches' in window) {
+    caches.keys().then(names => {
+      names.forEach(name => {
+        if (name.includes('hmstudio-quickview')) {
+          caches.delete(name);
+        }
+      });
+    });
+  }
 
   console.log('Quick View cleanup completed');
 };
