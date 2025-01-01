@@ -1,7 +1,13 @@
-// src/scripts/quickView.js v2.3.7
+// src/scripts/quickView.js v2.3.8
 
 (function() {
-  console.log('Quick View script initialized');
+// Check if feature is disabled before initializing
+if (localStorage.getItem('hmstudio_quickview_disabled') === 'true') {
+  console.log('Quick View is disabled. Preventing script initialization.');
+  return;
+}
+
+console.log('Quick View script initialized');
 
   function getStoreIdFromUrl() {
     const scriptTag = document.currentScript;
