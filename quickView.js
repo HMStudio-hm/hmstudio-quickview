@@ -1,13 +1,7 @@
-// src/scripts/quickView.js v2.3.8
+// src/scripts/quickView.js v2.3.9
 
 (function() {
-// Check if feature is disabled before initializing
-if (localStorage.getItem('hmstudio_quickview_disabled') === 'true') {
-  console.log('Quick View is disabled. Preventing script initialization.');
-  return;
-}
-
-console.log('Quick View script initialized');
+  console.log('Quick View script initialized');
 
   function getStoreIdFromUrl() {
     const scriptTag = document.currentScript;
@@ -15,6 +9,67 @@ console.log('Quick View script initialized');
     const storeId = scriptUrl.searchParams.get('storeId');
     return storeId ? storeId.split('?')[0] : null;
   }
+
+
+// Add cache busting parameter to prevent caching
+  const version = Date.now();
+  
+  // Add cleanup function
+  function cleanupQuickView() {
+    // Remove all quick view buttons
+    const quickViewButtons = document.querySelectorAll('.quick-view-btn');
+    quickViewButtons.forEach(button => button.remove());
+    
+    // Remove any active modals
+    const modals = document.querySelectorAll('.hmstudio-quick-view-modal');
+    modals.forEach(modal => modal.remove());
+    
+    // Remove observers
+    if (window.quickViewObserver) {
+      window.quickViewObserver.disconnect();
+      delete window.quickViewObserver;
+    }
+    
+    // Remove global object
+    if (window.HMStudioQuickView) {
+      delete window.HMStudioQuickView;
+    }
+
+    // Remove the script tag itself
+    const scriptTag = document.currentScript;
+    if (scriptTag) {
+      scriptTag.remove();
+    }
+  }
+
+  // Add script removal detection
+  function detectScriptRemoval() {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.removedNodes.forEach((node) => {
+          if (node === document.currentScript) {
+            cleanupQuickView();
+            observer.disconnect();
+          }
+        });
+      });
+    });
+
+    observer.observe(document.head, {
+      childList: true
+    });
+  }
+
+  // Call detection setup
+  detectScriptRemoval();
+
+  // Add script initialization flag
+  if (window.HMStudioQuickViewInitialized) {
+    cleanupQuickView();
+    return;
+  }
+  window.HMStudioQuickViewInitialized = true;
+
 
   function getCurrentLanguage() {
     return document.documentElement.lang || 'ar'; // Default to Arabic if not found
@@ -25,49 +80,6 @@ console.log('Quick View script initialized');
     console.error('Store ID not found in script URL');
     return;
   }
-
-  // Add cleanup code here
-if (!window.HMStudioQuickView) {
-  window.HMStudioQuickView = {};
-}
-
-// In src/scripts/quickView.js
-window.HMStudioQuickView.cleanup = function() {
-  // Remove all quick view buttons
-  document.querySelectorAll('.quick-view-btn').forEach(btn => btn.remove());
-  
-  // Remove any existing modals
-  const modal = document.querySelector('.quick-view-modal');
-  if (modal) {
-    modal.remove();
-  }
-
-  // Remove any observers if they exist
-  if (window.HMStudioQuickView.observer) {
-    window.HMStudioQuickView.observer.disconnect();
-  }
-
-  // Clean up any remaining event listeners
-  document.removeEventListener('DOMContentLoaded', window.HMStudioQuickView.initialize);
-  window.removeEventListener('beforeunload', window.HMStudioQuickView.cleanup);
-
-  // NEW: Remove the script tag itself
-  const scriptTags = document.querySelectorAll('script[src*="hmstudio-quickview"]');
-  scriptTags.forEach(script => script.remove());
-
-  // NEW: Clear any cached resources
-  if ('caches' in window) {
-    caches.keys().then(names => {
-      names.forEach(name => {
-        if (name.includes('hmstudio-quickview')) {
-          caches.delete(name);
-        }
-      });
-    });
-  }
-
-  console.log('Quick View cleanup completed');
-};
 
   const config = {
     ...window.HMStudioQuickViewConfig,
