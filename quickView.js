@@ -1,5 +1,6 @@
 // src/scripts/quickView.js v2.3.6
 
+
 (function() {
   console.log('Quick View script initialized');
 
