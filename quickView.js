@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.3.5
+// src/scripts/quickView.js v2.3.6
 
 (function() {
   console.log('Quick View script initialized');
@@ -20,39 +20,39 @@
     return;
   }
 
+  // Add cleanup code here
+if (!window.HMStudioQuickView) {
+  window.HMStudioQuickView = {};
+}
+
+window.HMStudioQuickView.cleanup = function() {
+  // Remove all quick view buttons
+  document.querySelectorAll('.quick-view-btn').forEach(btn => btn.remove());
+  
+  // Remove any existing modals
+  const modal = document.querySelector('.quick-view-modal');
+  if (modal) {
+    modal.remove();
+  }
+
+  // Remove any observers if they exist
+  if (window.HMStudioQuickView.observer) {
+    window.HMStudioQuickView.observer.disconnect();
+  }
+
+  // Clean up any remaining event listeners
+  document.removeEventListener('DOMContentLoaded', window.HMStudioQuickView.initialize);
+  window.removeEventListener('beforeunload', window.HMStudioQuickView.cleanup);
+
+  console.log('Quick View cleanup completed');
+};
+
   const config = {
     ...window.HMStudioQuickViewConfig,
     storeId: storeId
   };
 
   console.log('Quick View config:', config);
-
-  // Add cleanup functionality
-  if (!window.HMStudioQuickView) {
-    window.HMStudioQuickView = {};
-  }
-
-  window.HMStudioQuickView.cleanup = function() {
-    // Remove all quick view buttons
-    document.querySelectorAll('.quick-view-btn').forEach(btn => btn.remove());
-    
-    // Remove any existing modals
-    const modal = document.querySelector('.quick-view-modal');
-    if (modal) {
-      modal.remove();
-    }
-
-    // Remove any observers if they exist
-    if (window.HMStudioQuickView.observer) {
-      window.HMStudioQuickView.observer.disconnect();
-    }
-
-    // Clean up any remaining event listeners
-    document.removeEventListener('DOMContentLoaded', window.HMStudioQuickView.initialize);
-    window.removeEventListener('beforeunload', window.HMStudioQuickView.cleanup);
-
-    console.log('Quick View cleanup completed');
-  };
 
   // Add Analytics object
   const QuickViewStats = {
