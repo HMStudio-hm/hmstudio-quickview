@@ -1,82 +1,64 @@
-// src/scripts/quickView.js v2.4.0
+// src/scripts/quickView.js v2.4.1
 
 (function() {
-  // Add initialization check to prevent duplicate execution
-  if (window.HMStudioQuickViewInitialized) {
-    console.log('Quick View already initialized, cleaning up old instance');
-    // Clean up existing quick view elements if any
-    const quickViewButtons = document.querySelectorAll('.quick-view-btn');
-    quickViewButtons.forEach(button => button.remove());
-    return;
-  }
-  window.HMStudioQuickViewInitialized = true;
-
-  console.log('Quick View script initialized');
-
-  function getStoreIdFromUrl() {
+  // Add the checkFeatureStatus function at the start
+  async function checkFeatureStatus() {
     const scriptTag = document.currentScript;
     const scriptUrl = new URL(scriptTag.src);
     const storeId = scriptUrl.searchParams.get('storeId');
-    return storeId ? storeId.split('?')[0] : null;
-  }
-
-  function getCurrentLanguage() {
-    return document.documentElement.lang || 'ar';
-  }
-
-  // Add cleanup function
-  function cleanup() {
-    console.log('Cleaning up Quick View...');
     
-    // Remove all quick view buttons
-    const quickViewButtons = document.querySelectorAll('.quick-view-btn');
-    quickViewButtons.forEach(button => button.remove());
-
-    // Remove any open modals
-    const modals = document.querySelectorAll('.hmstudio-quick-view-modal');
-    modals.forEach(modal => modal.remove());
-
-    // Clean up global objects
-    delete window.HMStudioQuickView;
-    delete window.HMStudioQuickViewInitialized;
-
-    // Remove any existing observers
-    if (window.quickViewObserver) {
-      window.quickViewObserver.disconnect();
-      delete window.quickViewObserver;
+    if (!storeId) {
+      console.log('Quick View: No store ID found, exiting...');
+      return false;
     }
 
-    // Remove script tag if possible
-    const scripts = document.querySelectorAll('script[src*="quickview"]');
-    scripts.forEach(script => {
-      if (script.src.includes('hmstudio-quickview')) {
-        script.remove();
+    try {
+      // Fetch current settings from your API
+      const response = await fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewSettings?storeId=${storeId}`);
+      if (!response.ok) {
+        console.log('Quick View: Failed to fetch settings, exiting...');
+        return false;
       }
-    });
 
-    console.log('Quick View cleanup completed');
+      const settings = await response.json();
+      return settings.enabled === true;
+    } catch (error) {
+      console.error('Quick View: Error checking feature status:', error);
+      return false;
+    }
   }
 
-  // Add script removal detection
-  const cleanupObserver = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.removedNodes.forEach((node) => {
-        if (node.nodeName === 'SCRIPT' && 
-            node.src && 
-            node.src.includes('hmstudio-quickview')) {
-          console.log('Quick View script removal detected, cleaning up...');
-          cleanup();
-          cleanupObserver.disconnect();
-        }
-      });
-    });
-  });
+  // Run initial check before doing anything else
+  checkFeatureStatus().then(isEnabled => {
+    if (!isEnabled) {
+      console.log('Quick View: Feature is disabled, exiting...');
+      return;
+    }
 
-  // Start observing script removal
-  cleanupObserver.observe(document.documentElement, {
-    childList: true,
-    subtree: true
-  });
+    // Your existing initialization code starts here
+    console.log('Quick View: Feature is enabled, initializing...');
+
+    // Add initialization check to prevent duplicate execution
+    if (window.HMStudioQuickViewInitialized) {
+      console.log('Quick View already initialized, cleaning up old instance');
+      const quickViewButtons = document.querySelectorAll('.quick-view-btn');
+      quickViewButtons.forEach(button => button.remove());
+      return;
+    }
+    window.HMStudioQuickViewInitialized = true;
+
+    console.log('Quick View script initialized');
+
+    function getStoreIdFromUrl() {
+      const scriptTag = document.currentScript;
+      const scriptUrl = new URL(scriptTag.src);
+      const storeId = scriptUrl.searchParams.get('storeId');
+      return storeId ? storeId.split('?')[0] : null;
+    }
+
+  function getCurrentLanguage() {
+    return document.documentElement.lang || 'ar'; // Default to Arabic if not found
+  }
 
   const storeId = getStoreIdFromUrl();
   if (!storeId) {
@@ -1228,8 +1210,5 @@ buttonContainer.style.cssText = `
     openQuickView: openQuickView
   };
   console.log('HMStudioQuickView object exposed to window');
-
-  // Expose cleanup method globally
-  window.HMStudioQuickView = window.HMStudioQuickView || {};
-  window.HMStudioQuickView.cleanup = cleanup;
+});
 })();
