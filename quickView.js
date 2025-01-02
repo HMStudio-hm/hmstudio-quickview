@@ -1,60 +1,46 @@
-// src/scripts/quickView.js v2.4.1
+// src/scripts/quickView.js v2.4.2
 
 (function() {
-  // Add the checkFeatureStatus function at the start
-  async function checkFeatureStatus() {
+
+   // Immediately check enabled status before doing anything else
+   async function checkIfEnabled() {
     const scriptTag = document.currentScript;
     const scriptUrl = new URL(scriptTag.src);
     const storeId = scriptUrl.searchParams.get('storeId');
     
-    if (!storeId) {
-      console.log('Quick View: No store ID found, exiting...');
-      return false;
-    }
-
     try {
-      // Fetch current settings from your API
-      const response = await fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/getQuickViewSettings?storeId=${storeId}`);
-      if (!response.ok) {
-        console.log('Quick View: Failed to fetch settings, exiting...');
-        return false;
-      }
-
-      const settings = await response.json();
-      return settings.enabled === true;
+      const response = await fetch(`https://api.zid.sa/v1/managers/app-scripts`, {
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (!response.ok) return false;
+      
+      const data = await response.json();
+      return data.scripts && data.scripts.length > 0;
     } catch (error) {
-      console.error('Quick View: Error checking feature status:', error);
+      console.error('Failed to check Quick View status:', error);
       return false;
     }
   }
 
-  // Run initial check before doing anything else
-  checkFeatureStatus().then(isEnabled => {
+  // Check before initializing
+  checkIfEnabled().then(isEnabled => {
     if (!isEnabled) {
-      console.log('Quick View: Feature is disabled, exiting...');
+      console.log('Quick View is disabled, not initializing...');
       return;
     }
 
-    // Your existing initialization code starts here
-    console.log('Quick View: Feature is enabled, initializing...');
 
-    // Add initialization check to prevent duplicate execution
-    if (window.HMStudioQuickViewInitialized) {
-      console.log('Quick View already initialized, cleaning up old instance');
-      const quickViewButtons = document.querySelectorAll('.quick-view-btn');
-      quickViewButtons.forEach(button => button.remove());
-      return;
-    }
-    window.HMStudioQuickViewInitialized = true;
+  console.log('Quick View script initialized');
 
-    console.log('Quick View script initialized');
-
-    function getStoreIdFromUrl() {
-      const scriptTag = document.currentScript;
-      const scriptUrl = new URL(scriptTag.src);
-      const storeId = scriptUrl.searchParams.get('storeId');
-      return storeId ? storeId.split('?')[0] : null;
-    }
+  function getStoreIdFromUrl() {
+    const scriptTag = document.currentScript;
+    const scriptUrl = new URL(scriptTag.src);
+    const storeId = scriptUrl.searchParams.get('storeId');
+    return storeId ? storeId.split('?')[0] : null;
+  }
 
   function getCurrentLanguage() {
     return document.documentElement.lang || 'ar'; // Default to Arabic if not found
