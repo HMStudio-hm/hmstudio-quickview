@@ -1,38 +1,6 @@
-// src/scripts/quickView.js v2.4.2
+// src/scripts/quickView.js v2.4.3
 
 (function() {
-
-   // Immediately check enabled status before doing anything else
-   async function checkIfEnabled() {
-    const scriptTag = document.currentScript;
-    const scriptUrl = new URL(scriptTag.src);
-    const storeId = scriptUrl.searchParams.get('storeId');
-    
-    try {
-      const response = await fetch(`https://api.zid.sa/v1/managers/app-scripts`, {
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      
-      if (!response.ok) return false;
-      
-      const data = await response.json();
-      return data.scripts && data.scripts.length > 0;
-    } catch (error) {
-      console.error('Failed to check Quick View status:', error);
-      return false;
-    }
-  }
-
-  // Check before initializing
-  checkIfEnabled().then(isEnabled => {
-    if (!isEnabled) {
-      console.log('Quick View is disabled, not initializing...');
-      return;
-    }
-
-
   console.log('Quick View script initialized');
 
   function getStoreIdFromUrl() {
@@ -58,6 +26,24 @@
   };
 
   console.log('Quick View config:', config);
+
+
+
+  // Add the preview mode check here:
+const urlParams = new URLSearchParams(window.location.search);
+const isPreviewMode = urlParams.get('preview') === 'true';
+
+if (isPreviewMode) {
+  // Wait for DOM and your script to be ready
+  setTimeout(() => {
+    // Find a product to trigger quick view on
+    const productId = '17a3ec6f-b0b5-4717-aaaf-ae9b2e637892'; // Your sample product ID
+    if (window.HMStudioQuickView) {
+      window.HMStudioQuickView.openQuickView(productId);
+    }
+  }, 1000);
+}
+
 
   // Add Analytics object
   const QuickViewStats = {
@@ -1196,5 +1182,4 @@ buttonContainer.style.cssText = `
     openQuickView: openQuickView
   };
   console.log('HMStudioQuickView object exposed to window');
-});
 })();
