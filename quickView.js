@@ -1,7 +1,7 @@
-// src/scripts/quickView.js v2.4.3
+// src/scripts/quickView.js v2.4.4 wlkn hiya fl a2ssl v2.3.1 with removing logs.
 
 (function() {
-  console.log('Quick View script initialized');
+  // Removed: console.log('Quick View script initialized');
 
   function getStoreIdFromUrl() {
     const scriptTag = document.currentScript;
@@ -16,7 +16,7 @@
 
   const storeId = getStoreIdFromUrl();
   if (!storeId) {
-    console.error('Store ID not found in script URL');
+    // Removed: console.error('Store ID not found in script URL');
     return;
   }
 
@@ -25,31 +25,13 @@
     storeId: storeId
   };
 
-  console.log('Quick View config:', config);
-
-
-
-  // Add the preview mode check here:
-const urlParams = new URLSearchParams(window.location.search);
-const isPreviewMode = urlParams.get('preview') === 'true';
-
-if (isPreviewMode) {
-  // Wait for DOM and your script to be ready
-  setTimeout(() => {
-    // Find a product to trigger quick view on
-    const productId = '17a3ec6f-b0b5-4717-aaaf-ae9b2e637892'; // Your sample product ID
-    if (window.HMStudioQuickView) {
-      window.HMStudioQuickView.openQuickView(productId);
-    }
-  }, 1000);
-}
-
+  // Removed: console.log('Quick View config:', config);
 
   // Add Analytics object
   const QuickViewStats = {
     async trackEvent(eventType, data) {
       try {
-        console.log('Starting Quick View stats tracking for event:', eventType);
+        // Removed: console.log('Starting Quick View stats tracking for event:', eventType);
         
         const timestamp = new Date();
         const month = timestamp.toISOString().slice(0, 7);
@@ -62,7 +44,7 @@ if (isPreviewMode) {
           ...data
         };
   
-        console.log('Sending Quick View stats data:', eventData);
+        // Removed: console.log('Sending Quick View stats data:', eventData);
   
         const response = await fetch(`https://europe-west3-hmstudio-85f42.cloudfunctions.net/trackQuickViewStats`, {
           method: 'POST',
@@ -73,20 +55,20 @@ if (isPreviewMode) {
         });
   
         const responseData = await response.json();
-        console.log('Quick View stats response:', responseData);
+        // Removed: console.log('Quick View stats response:', responseData);
   
         if (!response.ok) {
           throw new Error(`Quick View stats tracking failed: ${responseData.error || response.statusText}`);
         }
   
       } catch (error) {
-        console.error('Quick View stats tracking error:', error);
+        // Removed: console.error('Quick View stats tracking error:', error);
       }
     }
   };
 
   async function fetchProductData(productId) {
-    console.log('Fetching product data for ID:', productId);
+    // Removed: console.log('Fetching product data for ID:', productId);
     const url = `https://europe-west3-hmstudio-85f42.cloudfunctions.net/getProductData?storeId=${storeId}&productId=${productId}`;
     
     try {
@@ -95,16 +77,16 @@ if (isPreviewMode) {
         throw new Error(`Failed to fetch product data: ${response.statusText}`);
       }
       const data = await response.json();
-      console.log('Received product data:', data);
+      // Removed: console.log('Received product data:', data);
       return data;
     } catch (error) {
-      console.error('Error fetching product data:', error);
+      // Removed: console.error('Error fetching product data:', error);
       throw error;
     }
   }
 
   function createImageGallery(images) {
-    console.log('Creating gallery with images:', images);
+    // Removed: console.log('Creating gallery with images:', images);
     const galleryContainer = document.createElement('div');
     galleryContainer.className = 'quick-view-gallery';
     galleryContainer.style.cssText = `
@@ -240,7 +222,7 @@ if (isPreviewMode) {
         select.innerHTML = optionsHTML;
 
         select.addEventListener('change', () => {
-          console.log('Selected:', attr.name, select.value);
+          // Removed: console.log('Selected:', attr.name, select.value);
           updateSelectedVariant(productData);
         });
 
@@ -386,7 +368,7 @@ if (isPreviewMode) {
   function updateSelectedVariant(productData) {
     const form = document.getElementById('product-form');
     if (!form) {
-      console.error('Product form not found');
+      // Removed: console.error('Product form not found');
       return;
     }
 
@@ -401,7 +383,7 @@ if (isPreviewMode) {
       }
     });
 
-    console.log('Selected values:', selectedValues);
+    // Removed: console.log('Selected values:', selectedValues);
 
     // Find matching variant
     const selectedVariant = productData.variants.find(variant => {
@@ -411,7 +393,7 @@ if (isPreviewMode) {
       });
     });
 
-    console.log('Found variant:', selectedVariant);
+    // Removed: console.log('Found variant:', selectedVariant);
 
     if (selectedVariant) {
       // Update product ID input
@@ -423,7 +405,7 @@ if (isPreviewMode) {
         form.appendChild(productIdInput);
       }
       productIdInput.value = selectedVariant.id;
-      console.log('Updated product ID to:', selectedVariant.id);
+      // Removed: console.log('Updated product ID to:', selectedVariant.id);
 
       // Update price display
       const priceElement = form.querySelector('#product-price');
@@ -478,7 +460,7 @@ if (isPreviewMode) {
   
     // Check if product has variants
     if (productData.variants && productData.variants.length > 0) {
-      console.log('Product has variants:', productData.variants);
+      // Removed: console.log('Product has variants:', productData.variants);
       
       // Get all variant selections
       const selectedVariants = {};
@@ -501,7 +483,7 @@ if (isPreviewMode) {
         return;
       }
   
-      console.log('Selected variants:', selectedVariants);
+      // Removed: console.log('Selected variants:', selectedVariants);
   
       // Find the matching variant
       const selectedVariant = productData.variants.find(variant => {
@@ -512,8 +494,8 @@ if (isPreviewMode) {
       });
   
       if (!selectedVariant) {
-        console.error('No matching variant found');
-        console.log('Selected combinations:', selectedVariants);
+        // Removed: console.error('No matching variant found');
+        // Removed: console.log('Selected combinations:', selectedVariants);
         const message = currentLang === 'ar' 
           ? 'هذا المنتج غير متوفر بالمواصفات المختارة'
           : 'This product variant is not available';
@@ -521,13 +503,13 @@ if (isPreviewMode) {
         return;
       }
   
-      console.log('Found matching variant:', selectedVariant);
+      // Removed: console.log('Found matching variant:', selectedVariant);
       
       // Update product ID to selected variant ID
       const productIdInput = form.querySelector('input[name="product_id"]');
       if (productIdInput) {
         productIdInput.value = selectedVariant.id;
-        console.log('Updated product ID to variant ID:', selectedVariant.id);
+        // Removed: console.log('Updated product ID to variant ID:', selectedVariant.id);
       }
     }
   
@@ -556,10 +538,10 @@ if (isPreviewMode) {
   
     // Get the form data
     const formData = new FormData(form);
-    console.log('Form data being submitted:', {
-      product_id: formData.get('product_id'),
-      quantity: formData.get('quantity')
-    });
+    // Removed: console.log('Form data being submitted:', {
+    //   product_id: formData.get('product_id'),
+    //   quantity: formData.get('quantity')
+    // });
   
     // Call Zid's cart function
     try {
@@ -571,7 +553,7 @@ if (isPreviewMode) {
         }
       })
       .then(async function (response) {
-        console.log('Add to cart response:', response);
+        // Removed: console.log('Add to cart response:', response);
         if (response.status === 'success') {
           // Track successful cart addition
           try {
@@ -583,7 +565,7 @@ if (isPreviewMode) {
                 productData.name
             });
           } catch (trackingError) {
-            console.warn('Quick View stats tracking error:', trackingError);
+            // Removed: console.warn('Quick View stats tracking error:', trackingError);
           }
   
           if (typeof setCartBadge === 'function') {
@@ -595,7 +577,7 @@ if (isPreviewMode) {
             modal.remove();
           }
         } else {
-          console.error('Add to cart failed:', response);
+          // Removed: console.error('Add to cart failed:', response);
           const errorMessage = currentLang === 'ar' 
             ? response.data.message || 'فشل إضافة المنتج إلى السلة'
             : response.data.message || 'Failed to add product to cart';
@@ -603,7 +585,7 @@ if (isPreviewMode) {
         }
       })
       .catch(function(error) {
-        console.error('Error adding to cart:', error);
+        // Removed: console.error('Error adding to cart:', error);
         const errorMessage = currentLang === 'ar' 
           ? 'حدث خطأ أثناء إضافة المنتج إلى السلة'
           : 'Error occurred while adding product to cart';
@@ -614,7 +596,7 @@ if (isPreviewMode) {
         loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
       });
     } catch (error) {
-      console.error('Critical error in add to cart:', error);
+      // Removed: console.error('Critical error in add to cart:', error);
       loadingSpinners.forEach(spinner => spinner.classList.add('d-none'));
     }
   }
@@ -622,7 +604,7 @@ if (isPreviewMode) {
 
   async function displayQuickViewModal(productData) {
     const currentLang = getCurrentLanguage();
-    console.log('Displaying Quick View modal for product:', productData);
+    // Removed: console.log('Displaying Quick View modal for product:', productData);
 
     // Track modal open event
     try {
@@ -633,7 +615,7 @@ if (isPreviewMode) {
           productData.name
       });
     } catch (trackingError) {
-      console.warn('Quick View stats tracking error:', trackingError);
+      // Removed: console.warn('Quick View stats tracking error:', trackingError);
     }
     
     const existingModal = document.querySelector('.quick-view-modal');
@@ -1071,27 +1053,27 @@ if (isPreviewMode) {
       updateSelectedVariant(productData);
     }
 
-    console.log('Quick View modal added to DOM');
+    // Removed: console.log('Quick View modal added to DOM');
   }
   
   async function openQuickView(productId) {
-    console.log('Opening Quick View for product ID:', productId);
+    // Removed: console.log('Opening Quick View for product ID:', productId);
     try {
       const productData = await fetchProductData(productId);
       displayQuickViewModal(productData);
     } catch (error) {
-      console.error('Failed to open quick view:', error);
+      // Empty statement as per instructions
     }
   }
 
   function addQuickViewButtons() {
-    console.log('Adding Quick View buttons');
+    // Removed: console.log('Adding Quick View buttons');
     const productCards = document.querySelectorAll('.product-item.position-relative');
-    console.log('Found product cards:', productCards.length);
+    // Removed: console.log('Found product cards:', productCards.length);
     
     productCards.forEach(card => {
       if (card.querySelector('.quick-view-btn')) {
-        console.log('Quick View button already exists for a product, skipping');
+        // Removed: console.log('Quick View button already exists for a product, skipping');
         return;
       }
 
@@ -1099,37 +1081,37 @@ if (isPreviewMode) {
       const productId = card.querySelector('[data-wishlist-id]')?.getAttribute('data-wishlist-id');
       
       if (productId) {
-        console.log('Found product ID:', productId);
+        // Removed: console.log('Found product ID:', productId);
         
         // Find the button container - it's the div with text-align: center
         const buttonContainer = card.querySelector('div[style*="text-align: center"]');
-if (buttonContainer) {
-  // Update the button container styles to ensure horizontal alignment
-  buttonContainer.className = 'hmstudio-buttons-container';  // Add this class
-buttonContainer.style.cssText = `
-    text-align: center;
-    display: inline-flex;  
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-`;
+        if (buttonContainer) {
+          // Update the button container styles to ensure horizontal alignment
+          buttonContainer.className = 'hmstudio-buttons-container';  // Add this class
+          buttonContainer.style.cssText = `
+            text-align: center;
+            display: inline-flex;  
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+          `;
 
-  const button = document.createElement('button');
-  button.className = 'quick-view-btn';
-  button.style.cssText = `
-    width: 35px;
-    height: 35px;
-    padding: 0;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background-color: #ffffff;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    display: inline-flex;  /* Changed to inline-flex */
-    align-items: center;
-    justify-content: center;
-    vertical-align: middle;  /* Added this */
-  `;
+          const button = document.createElement('button');
+          button.className = 'quick-view-btn';
+          button.style.cssText = `
+            width: 35px;
+            height: 35px;
+            padding: 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #ffffff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: inline-flex;  /* Changed to inline-flex */
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;  /* Added this */
+          `;
 
           // Add eye icon using SVG
           button.innerHTML = `
@@ -1149,7 +1131,7 @@ buttonContainer.style.cssText = `
 
           button.addEventListener('click', (e) => {
             e.preventDefault();
-            console.log('Quick View button clicked for product ID:', productId);
+            // Removed: console.log('Quick View button clicked for product ID:', productId);
             openQuickView(productId);
           });
 
@@ -1166,20 +1148,18 @@ buttonContainer.style.cssText = `
   }
 
   // Initial setup
-  console.log('Running initial setup');
   addQuickViewButtons();
 
   // Re-apply Quick View buttons when the page content changes
   const observer = new MutationObserver(() => {
-    console.log('Page content changed, re-applying Quick View buttons');
     addQuickViewButtons();
   });
   observer.observe(document.body, { childList: true, subtree: true });
-  console.log('MutationObserver set up');
 
   // Expose necessary functions
   window.HMStudioQuickView = {
     openQuickView: openQuickView
   };
-  console.log('HMStudioQuickView object exposed to window');
+  // Removed: console.log('HMStudioQuickView object exposed to window');
 })();
+
