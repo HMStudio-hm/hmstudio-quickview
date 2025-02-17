@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.4.5
+// src/scripts/quickView.js v2.4.6
 
 (function() {
   console.log('Quick View script initialized');
@@ -1108,73 +1108,78 @@
             console.log('Found product ID:', productId);
             
             // Find the button container - support both themes
-            const buttonContainer = card.querySelector('div[style*="text-align: center"], .card-footer');
-            if (buttonContainer) {
-                // Update button container styles for Perfect theme compatibility
-                buttonContainer.className = 'hmstudio-buttons-container';
-                buttonContainer.style.cssText = `
-                    text-align: center;
-                    display: inline-flex;  
-                    align-items: center;
-                    justify-content: center;
-                    gap: 5px;
-                    width: 100%;
-                `;
+            let buttonContainer = card.querySelector('.card-footer') || 
+                                card.querySelector('div[style*="text-align: center"]');
 
-                const button = document.createElement('button');
-                button.className = 'quick-view-btn';
-                button.style.cssText = `
-                    width: 35px;
-                    height: 35px;
-                    padding: 0;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    background-color: #ffffff;
-                    cursor: pointer;
-                    transition: background-color 0.3s ease;
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    vertical-align: middle;
-                    margin: ${buttonContainer.classList.contains('card-footer') ? '5px' : '0'};
-                `;
+            // If no container found, create one for Perfect theme
+            if (!buttonContainer) {
+                buttonContainer = document.createElement('div');
+                buttonContainer.className = 'card-footer bg-transparent border-0';
+                card.appendChild(buttonContainer);
+            }
 
-                // Add eye icon using SVG
-                button.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                `;
+            // Update container styles
+            buttonContainer.style.cssText += `
+                text-align: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 5px;
+                width: 100%;
+            `;
 
-                // Add hover effects
-                button.addEventListener('mouseover', () => {
-                    button.style.backgroundColor = '#f0f0f0';
-                });
+            const button = document.createElement('button');
+            button.className = 'quick-view-btn';
+            button.style.cssText = `
+                width: 35px;
+                height: 35px;
+                padding: 0;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                background-color: #ffffff;
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                vertical-align: middle;
+                margin: 5px;
+            `;
 
-                button.addEventListener('mouseout', () => {
-                    button.style.backgroundColor = '#ffffff';
-                });
+            // Add eye icon using SVG
+            button.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+            `;
 
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    console.log('Quick View button clicked for product ID:', productId);
-                    openQuickView(productId);
-                });
+            button.addEventListener('mouseover', () => {
+                button.style.backgroundColor = '#f0f0f0';
+            });
 
-                // Insert the button appropriately based on theme
+            button.addEventListener('mouseout', () => {
+                button.style.backgroundColor = '#ffffff';
+            });
+
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Quick View button clicked for product ID:', productId);
+                openQuickView(productId);
+            });
+
+            // Safer insertion logic
+            try {
+                // For Perfect theme
                 if (buttonContainer.classList.contains('card-footer')) {
-                    // Perfect theme - insert at start
-                    buttonContainer.insertBefore(button, buttonContainer.firstChild);
+                    buttonContainer.appendChild(button);
                 } else {
-                    // Soft theme - insert before first button
-                    const firstButton = buttonContainer.querySelector('a, button');
-                    if (firstButton) {
-                        buttonContainer.insertBefore(button, firstButton);
-                    } else {
-                        buttonContainer.appendChild(button);
-                    }
+                    // For Soft theme
+                    buttonContainer.insertBefore(button, buttonContainer.firstChild);
                 }
+            } catch (error) {
+                console.warn('Failed to insert button normally, appending instead', error);
+                buttonContainer.appendChild(button);
             }
         }
     });
