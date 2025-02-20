@@ -1,6 +1,14 @@
-// src/scripts/quickView.js v2.4.6
+// src/scripts/quickView.js v2.4.7
 
 (function() {
+  // Get script URL and parse version
+  const scriptTag = document.currentScript;
+  const scriptUrl = new URL(scriptTag.src);
+  const version = scriptUrl.searchParams.get('v');
+  
+  // Store version for comparison
+  window.HMStudioQuickViewVersion = version;
+  
   console.log('Quick View script initialized');
 
   function getStoreIdFromUrl() {
