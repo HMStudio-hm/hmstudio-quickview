@@ -1,4 +1,4 @@
-// src/scripts/quickView.js v2.4.7
+// src/scripts/quickView.js v2.4.7 
 
 (function() {
   // Get script URL and parse version
